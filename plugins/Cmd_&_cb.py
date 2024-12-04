@@ -69,13 +69,18 @@ async def premium_callback(client, query: CallbackQuery):
         text=Txt.PREMIUM_TXT.format(query.from_user.mention),
         disable_web_page_preview=True,
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton('Uᴘɢʀᴀᴅᴇ Nᴏᴡ', url='https://t.me/Shadow_Kunn'),
-           ],InlineKeyboardButton('Fʀᴇᴇ Bᴏᴛ', url='https://t.me/Auto_Renamer_X_Bot')
-            [InlineKeyboardButton("Cʟᴏꜱᴇ", callback_data="close"),
-             InlineKeyboardButton("Hᴏᴍᴇ", callback_data="start")]
+            [
+                InlineKeyboardButton('Uᴘɢʀᴀᴅᴇ Nᴏᴡ', url='https://t.me/Shadow_Kunn'),
+                InlineKeyboardButton('Fʀᴇᴇ Bᴏᴛ', url='https://t.me/Auto_Renamer_X_Bot')
+            ],
+            [
+                InlineKeyboardButton("Cʟᴏꜱᴇ", callback_data="close"),
+                InlineKeyboardButton("Hᴏᴍᴇ", callback_data="start")
+            ]
         ])
     )
     await query.answer()
+
 
 @Client.on_callback_query(filters.regex('sequence'))
 async def sequence_callback(client, query: CallbackQuery):
