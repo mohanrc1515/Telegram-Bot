@@ -8,7 +8,7 @@ import pytz
 import random
 import string
 
-ADMIN = 6070793480
+ADMIN = 6006418463
 
 def generate_coupons(prefix, num_coupons, length=8):
     coupons = []
