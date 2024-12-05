@@ -16,7 +16,7 @@ async def aboutcm(client, message):
     star_count = stars_collection.count_documents({})
 
     await message.reply_photo(
-        photo="https://envs.sh/w_f.jpg",
+        photo="https://envs.sh/C5Q.jpg",
         caption=(
             f"<b><u>AUTO RENAME BOT</b></u>\n\n"
             f"👑 Owner: {message.from_user.mention}\n"
