@@ -21,7 +21,7 @@ class Config(object):
     FILES_CHANNEL = int(os.environ.get("FILES_CHANNEL", "-1002261537046"))
     REFER_CHANNEL = int(os.environ.get("REFER_CHANNEL", "-1002259020030"))
     POINTS_PER_REFERRAL = int(os.environ.get("POINTS_PER_REFERRAL", "10"))
-    USER_REPLY = "Access denied!\n\n- Enter /premium to learn more about unlocking this feature.\n- Or use /refer to get FREE authorization!"
+    USER_REPLY = "You are not authorised to use this bot. contact!\n\n- Enter /premium to learn more about getting authorization.\n- Or use /refer to get FREE authorization!"
     
     # wes response configuration     
     WEBHOOK = bool(os.environ.get("WEBHOOK", "True"))
