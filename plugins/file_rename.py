@@ -11,11 +11,7 @@ from helper.ffmpeg import *
 from helper.extraction import *
 from config import Config
 from asyncio import Queue, Semaphore, create_task, gather
-import os
-import time
-import re
-import asyncio
-import pytz
+import os, time, re, asyncio, pytz
 
 renaming_operations = {}
 sequencing_queue = {}
