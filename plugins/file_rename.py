@@ -544,11 +544,15 @@ async def send_file_with_retry(send_method, dump_channel, item):
         await send_file_with_retry(send_method, dump_channel, item)
 
 
+
 @Client.on_message(filters.command("cleardump") & filters.private)
 async def clear_sequence_dump(client, message: Message):
-    user_id = message.from_user.id    
-    result = await db.clear_user_sequence_queue(user_id)
-    if result:
+    user_id = message.from_user.id
+
+    user_queue = await db.get_user_sequence_queue(user_id)
+    if user_queue:
+        sequence_notified[user_id] = False
+        await db.clear_user_sequence_queue(user_id)
         await message.reply_text("Your sequence dump has been successfully cleared.")
     else:
         await message.reply_text("You don't have any files in your sequence dump.")
