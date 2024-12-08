@@ -63,7 +63,7 @@ async def auto_rename_command(client, message):
         await db.set_format_template(user_id, format_template)
 
         await message.reply_text(
-            f"Well done!\n\nYour auto-rename file caption has been set to: <code>{format_template}</code>..."
+            f"Your autorename template has been saved!!\n\nYour template : <code>{format_template}</code>..."
         )
     except FloodWait as e:
         await asyncio.sleep(e.x)
