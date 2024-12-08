@@ -474,14 +474,11 @@ async def task():
         del renaming_operations[file_id]
         #del user_files[user_id]
         
-    # Add the task to the user's queue
     user_queue = get_user_queue(user_id)
     await user_queue.put(task)
     
-    # Process tasks from the user's queue
     semaphore = get_user_semaphore(user_id)
     if not semaphore.locked():
-        # If the semaphore is not locked, process tasks from the queue
         while not user_queue.empty():
             task = await user_queue.get()
             await process_task(user_id, task)
@@ -539,7 +536,6 @@ async def sequence_dump(client, message: Message):
     await db.clear_user_sequence_queue(user_id)
     await client.delete_messages(chat_id=message.chat.id, message_ids=status_message.id)
 
-    # Notify user about the result
     if failed_files:
         await message.reply_text(f"Files sent, but some failed:\n" + "\n".join(failed_files))
     else:
@@ -557,3 +553,14 @@ async def send_file_with_retry(send_method, dump_channel, item):
         print(f"Flood wait of {e.value} seconds for file {item['file_name']}")
         await asyncio.sleep(e.value)
         await send_file_with_retry(send_method, dump_channel, item)
+
+
+@Client.on_message(filters.command("cleardump") & filters.private)
+async def clear_sequence_dump(client, message: Message):
+    user_id = message.from_user.id    
+    result = await db.clear_user_sequence_queue(user_id)
+    if result:
+        await message.reply_text("Your sequence dump has been successfully cleared.")
+    else:
+        await message.reply_text("You don't have any files in your sequence dump.")
+        
