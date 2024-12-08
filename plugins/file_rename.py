@@ -247,69 +247,58 @@ async def handle_files(client: Client, message: Message):
     download_msg = await message.reply_text("Your file has been added to the queue and will be processed soon.")
     await asyncio.sleep(1)
    
-async def safe_edit_message(message, text, delay=0):
-    try:
-        if delay:
-            await asyncio.sleep(delay)  # Add a delay to avoid rate limits
-        await message.edit(text)
-    except FloodWait as e:
-        print(f"FloodWait occurred for {e.value} seconds. Retrying...")
-        await asyncio.sleep(e.value)  # Wait for the required time
-        await safe_edit_message(message, text)  # Retry the edit
-    except Exception as e:
-        print(f"Failed to edit message: {e}")
-
-# Replace your edits with the `safe_edit_message` function
-async def task():
-    await asyncio.sleep(1)  # Prevent excessive rate limiting
-    await safe_edit_message(download_msg, "Processing... ⚡")
-    try:
-        path = await client.download_media(
-            message=file,
-            file_name=file_path,
-            progress=progress_for_pyrogram,
-            progress_args=("Download Started....", download_msg, time.time())
-        )
-    except FloodWait as e:
-        await asyncio.sleep(e.value) 
-        await task()
-    except Exception as e:
-        # Mark the file as ignored
-        del renaming_operations[file_id]
-        return await safe_edit_message(download_msg, str(e))
+    async def task():
+        await asyncio.sleep(1)  # Prevent excessive rate limiting
+        await download_msg.edit("Processing... ⚡")
+        try:
+            path = await client.download_media(
+                message=file,
+                file_name=file_path,
+                progress=progress_for_pyrogram,
+                progress_args=("Download Started....", download_msg, time.time())
+            )
+        except FloodWait as e:
+            await asyncio.sleep(e.value) 
+            await task() 
+        except Exception as e:
+            # Mark the file as ignored
+            del renaming_operations[file_id]
+            return await download_msg.edit(str(e))
             
-    # Metadata Adding Code
-    _bool_metadata = await db.get_meta(message.chat.id)
-    if _bool_metadata:
-        # Retrieve metadata title, author, subtitle, audio, video, and artist from the database
-        elites_data = await db.get_metadata(message.chat.id)
-            
-        sub_title = elites_data.get("title")
-        sub_author = elites_data.get("author")
-        sub_subtitle = elites_data.get("subtitle")
-        sub_audio = elites_data.get("audio")
-        sub_video = elites_data.get("video")
-        sub_artist = elites_data.get("artist")
+         # Metadata Adding Code
+        _bool_metadata = await db.get_meta(message.chat.id)
+        if _bool_metadata:
+            # Retrieve metadata title, author, subtitle, audio, video, and artist from the database
+            elites_data = await db.get_metadata(message.chat.id)
+                
+            sub_title = elites_data.get("title")
+            sub_author = elites_data.get("author")
+            sub_subtitle = elites_data.get("subtitle")
+            sub_audio = elites_data.get("audio")
+            sub_video = elites_data.get("video")
+            sub_artist = elites_data.get("artist")
 
-        metadata_path = f"Metadata/{new_file_name}"
-        await add_metadata(path, metadata_path, sub_title, sub_author, sub_subtitle, sub_audio, sub_video, sub_artist, download_msg)
-    else:
-        await safe_edit_message(download_msg, "Processing.... ⚡")
-        
-    duration = 0
-    try:
-        metadata = extractMetadata(createParser(file_path))
-        if metadata.has("duration"):
-            duration = metadata.get('duration').seconds
-    except Exception as e:
-        print(f"Error getting duration: {e}")
-        
-    try:
-        upload_msg = await safe_edit_message(download_msg, "Trying To Upload...")
-    except FloodWait as e:
-        await asyncio.sleep(e.value)  # Wait dynamically if FloodWait error occurs
-        upload_msg = await safe_edit_message(download_msg, "Trying To Upload...")  # Retry edit
-                            
+            metadata_path = f"Metadata/{new_file_name}"
+            await add_metadata(path, metadata_path, sub_title, sub_author, sub_subtitle, sub_audio, sub_video, sub_artist, download_msg)
+
+        else:
+            await asyncio.sleep(1)
+            await download_msg.edit("Processing....  ⚡")
+            
+        duration = 0
+        try:
+            metadata = extractMetadata(createParser(file_path))
+            if metadata.has("duration"):
+                duration = metadata.get('duration').seconds
+        except Exception as e:
+            print(f"Error getting duration: {e}")
+            
+        try:
+            upload_msg = await download_msg.edit("Trying To Upload...")
+        except FloodWait as e:
+            await asyncio.sleep(e.value)  # Wait dynamically if FloodWait error occurs
+            upload_msg = await download_msg.edit("Trying To Upload...")  # Retry edit
+                
         ph_path = None
         c_caption = await db.get_caption(message.chat.id)
         c_thumb = await db.get_thumbnail(message.chat.id)
