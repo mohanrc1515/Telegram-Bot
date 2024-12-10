@@ -98,7 +98,7 @@ async def clear_data(client, callback_query):
         await callback_query.answer("You are not authorized to use this action.", show_alert=True)
         
 
-Client.on_message(filters.command("enter"))
+@Client.on_message(filters.command("enter"))
 async def enter_giveaway(client, message):
     giveaway_status = get_giveaway_status()
     user_id = message.from_user.id
