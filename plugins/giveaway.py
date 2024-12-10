@@ -98,16 +98,17 @@ async def clear_data(client, callback_query):
         await callback_query.answer("You are not authorized to use this action.", show_alert=True)
         
 
-@Client.on_message(filters.command("enter") & (filters.private))
+Client.on_message(filters.command("enter"))
 async def enter_giveaway(client, message):
-    giveaway_status = get_giveaway_status()  
+    giveaway_status = get_giveaway_status()
     user_id = message.from_user.id
 
-    if message.chat.type in ["group", "supergroup"]:
+    user_in_db = await db.user_col.find_one({"_id": user_id})
+    if not user_in_db:
         await message.reply(
-            "⚠️ Please use this command in my private chat.",
+            "⚠️ ʏᴏᴜ ʜᴀᴠᴇɴ'ᴛ sᴛᴀʀᴛᴇᴅ ᴛʜᴇ ʙᴏᴛ ʏᴇᴛ. ᴘʟᴇᴀsᴇ ᴄʟɪᴄᴋ ᴛʜᴇ ʙᴜᴛᴛᴏɴ ʙᴇʟᴏᴡ ᴛᴏ sᴛᴀʀᴛ ᴛʜᴇ ʙᴏᴛ.",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("🤖 Bot PM", url="https://t.me/Auto_Rename_X_Bot")]]
+                [[InlineKeyboardButton("🔑 Sᴛᴀʀᴛ Bᴏᴛ", url="https://t.me/Auto_Rename_X_Bot?start=true")]]
             )
         )
         return
@@ -117,7 +118,6 @@ async def enter_giveaway(client, message):
             participants_collection.insert_one({"user_id": user_id})
             await message.reply("🎉 You have successfully entered the giveaway!")
 
-            # Log the action in the LOG_CHANNEL
             await client.send_message(
                 LOG_CHANNEL,
                 f"🎉 User [{message.from_user.first_name}](tg://user?id={user_id}) has entered the giveaway."
@@ -125,7 +125,7 @@ async def enter_giveaway(client, message):
         else:
             await message.reply("You are already in the giveaway!")
     else:
-        await message.reply("There is currently no ongoing giveaway.")
+        await message.reply("There is currently no ongoing giveaway!")
 
 
 @Client.on_message(filters.command("winner"))
