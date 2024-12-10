@@ -1,12 +1,9 @@
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
-import re
+from helper.extraction import extract_episode_number  # Importing the helper function
 
 # Dictionary to track the check process for each user
 user_check_mode = {}
-
-# Regular expression pattern to extract episode number from a file name or caption
-episode_pattern = r"ep\s*(\d+)"  # This pattern assumes the episode numbers are formatted as "ep 1", "ep2", etc.
 
 # Start the check process by asking for the first episode link
 @Client.on_message(filters.command("startcheck") & filters.private)
@@ -28,10 +25,9 @@ async def handle_start_check(client, message):
     if user_id not in user_check_mode or user_check_mode[user_id]["state"] != "start":
         return
 
-    # Extract the episode number from the link (assuming the link contains episode info)
-    match = re.search(episode_pattern, message.text.lower())
-    if match:
-        episode_num = int(match.group(1))
+    # Use the helper function to extract the episode number from the link
+    episode_num = extract_episode_number(message.text)
+    if episode_num:
         user_check_mode[user_id]["episodes"].append({"episode": episode_num, "link": message.text})
         user_check_mode[user_id]["state"] = "end"  # Now expect the last episode link
         await message.reply_text("Now, please provide the link of the last episode.")
@@ -58,10 +54,9 @@ async def handle_end_check(client, message):
     if user_id not in user_check_mode or user_check_mode[user_id]["state"] != "end":
         return
 
-    # Extract the episode number from the last episode link
-    match = re.search(episode_pattern, message.text.lower())
-    if match:
-        last_episode = int(match.group(1))
+    # Use the helper function to extract the episode number from the last episode link
+    last_episode = extract_episode_number(message.text)
+    if last_episode:
         user_check_mode[user_id]["episodes"].append({"episode": last_episode, "link": message.text})
 
         # Sort the list of episodes and check for missing numbers
@@ -105,3 +100,4 @@ async def handle_end_check(client, message):
         user_check_mode[user_id]["episodes"] = []
     else:
         await message.reply_text("Could not find episode number in the link. Please try again with a valid episode link.")
+        
