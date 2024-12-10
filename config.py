@@ -137,6 +137,9 @@ Get Premium: Enhance your file renaming capabilities and enjoy the full potentia
    - **Normal Mode**: Files are dispatched immediately to the dump channel after renaming.
    - **Sequence Mode**: Files are queued, and after using the /sequencedump command, they are sent in the correct order based on their season and episode...
 
+5. 🗑️ **Clear Dump**
+    - Use /cleardump to clear all files that has been sent for sequence dump, in case you've renamed something wrong. 
+    
 **Note :**Make sure this bot is admin in your dump channel """
     
     PROGRESS_BAR = """<b>
