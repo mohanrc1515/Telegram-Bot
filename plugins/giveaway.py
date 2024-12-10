@@ -101,9 +101,9 @@ async def clear_data(client, callback_query):
 async def enter_giveaway_group(client, message):
     user_id = message.from_user.id
     await message.reply(
-        "Please use this command in my PM to enter the giveaway.",
+        "ᴅᴇᴀʀ ᴜsᴇʀ, ᴋɪɴᴅʟʏ ᴜsᴇ ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ ɪɴ ᴍʏ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀᴛ....",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🤖 Bot PM", url="https://t.me/AutoRename_X_Bot")]
+            [InlineKeyboardButton("🤖 Oᴘᴇɴ ɪɴ Pʀɪᴠᴀᴛᴇ", url="https://t.me/Auto_Rename_X_Bot")]
         ])
     )
 
