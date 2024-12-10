@@ -97,9 +97,6 @@ async def clear_data(client, callback_query):
     else:
         await callback_query.answer("You are not authorized to use this action.", show_alert=True)
         
-
-from pyrogram import InlineKeyboardButton, InlineKeyboardMarkup
-
 @Client.on_message(filters.command("enter") & filters.group)
 async def enter_giveaway_group(client, message):
     user_id = message.from_user.id
@@ -129,8 +126,6 @@ async def enter_giveaway(client, message):
             await message.reply("You are already in the giveaway!")
     else:
         await message.reply("There is currently no ongoing giveaway.")
-
-
 
 @Client.on_message(filters.command("winner"))
 async def select_winner(client, message):
