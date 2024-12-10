@@ -98,25 +98,35 @@ async def clear_data(client, callback_query):
         await callback_query.answer("You are not authorized to use this action.", show_alert=True)
         
 
-Client.on_message(filters.command("enter") & (filters.private | filters.group))
+@Client.on_message(filters.command("enter") & (filters.private | filters.group))
 async def enter_giveaway(client, message):
-    giveaway_status = get_giveaway_status()
+    giveaway_status = get_giveaway_status()  
     user_id = message.from_user.id
+
+    if message.chat.type in ["group", "supergroup"]:
+        await message.reply(
+            "⚠️ Please use this command in my private chat.",
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("🤖 Bot PM", url="https://t.me/Auto_Rename_X_Bot")]]
+            )
+        )
+        return
 
     if giveaway_status:
         if not participants_collection.find_one({"user_id": user_id}):
             participants_collection.insert_one({"user_id": user_id})
             await message.reply("🎉 You have successfully entered the giveaway!")
 
-            # Send log message to LOG_CHANNEL
+            # Log the action in the LOG_CHANNEL
             await client.send_message(
-                LOG_CHANNEL, 
+                LOG_CHANNEL,
                 f"🎉 User [{message.from_user.first_name}](tg://user?id={user_id}) has entered the giveaway."
             )
         else:
             await message.reply("You are already in the giveaway!")
     else:
         await message.reply("There is currently no ongoing giveaway.")
+
 
 @Client.on_message(filters.command("winner"))
 async def select_winner(client, message):
