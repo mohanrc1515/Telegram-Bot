@@ -53,7 +53,7 @@ async def about_callback(client, callback_query):
 
     keyboard = InlineKeyboardMarkup(
         [
-            [InlineKeyboardButton("Bᴀᴄᴋ", callback_data="start")],
+            [InlineKeyboardButton("✗ Bᴀᴄᴋ ✗", callback_data="start")],
         ]
     )
 
