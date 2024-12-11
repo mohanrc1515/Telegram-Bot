@@ -35,6 +35,7 @@ async def get_stats(bot: Client, message: Message):
     free = get_size(free)
     uptime = time.strftime("%Hh%Mm%Ss", time.gmtime(time.time() - bot.uptime))
     start_t = time.time()
+    total_renamed_size = await db.get_total_renamed_size()
    
     
     # Calculate time taken to get stats
@@ -49,7 +50,8 @@ async def get_stats(bot: Client, message: Message):
         f"**🐌 Ping:** `{time_taken_s:.3f} ms`\n"
         f"**👥 Total Users:** `{total_users}`\n"
         f"**📦 Storage Used:** `{size}`\n"
-        f"**📂 Storage Free:** `{free}`"
+        f"**📂 Storage Free:** `{free}`\n"
+        f"**Size** : {total_renamed_size}"
     )
     
     # Send stats with image
