@@ -10,7 +10,7 @@ import pytz
 
 # Settings and Constants
 ADMIN = 6006418463
-REFERRAL_POINTS_THRESHOLD = 100
+REFERRAL_POINTS_THRESHOLD = 150
 AUTH_DURATION = "1 month"
 
 @Client.on_message(filters.private & filters.command("refer"))
