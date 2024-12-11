@@ -2,20 +2,11 @@ import time
 import os
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram import Client, filters
-from pymongo import MongoClient
-from config import Config
 from helper.database import db
 from helper.utils import humanbytes
 
-# Database setup
-client = MongoClient(Config.DB_URL)
-db = client["star_bot"]
-stars_collection = db["stars"]
-
 @Client.on_message(filters.private & filters.command(["about"]))
 async def aboutcm(client, message):
-    # Retrieve star count
-    star_count = stars_collection.count_documents({})
     total_files_renamed = await db.get_total_files_renamed()
     total_renamed_size = await db.get_total_renamed_size()
 
@@ -32,20 +23,17 @@ async def aboutcm(client, message):
             f"👥 Support Group: [Elites Assistance](https://t.me/Elites_Assistance)\n"
             f"🤖 GitHub: [Click Here](https://github.com/Orewa-Kaizen)\n\n"
             f"📂 Total Files Renamed: {total_files_renamed}\n"
-            f"🗃 Total Renamed Size: {humanbytes(int(total_renamed_size))}\n\n"
-            f"⭐ Star Count: {star_count}\n"
+            f"🗃 Total Renamed Size: {humanbytes(int(total_renamed_size))}"
         ),
         reply_markup=InlineKeyboardMarkup(
             [
-                [InlineKeyboardButton("Oᴡɴᴇʀ", url="https://t.me/ElitesCrewBot"),
-                 InlineKeyboardButton("⭐ Star", callback_data="vote")]
+                [InlineKeyboardButton("✗ Close ✗", callback_data="close")
             ]
         )
     )
 
 @Client.on_callback_query(filters.regex('about'))
 async def about_callback(client, callback_query):
-    star_count = stars_collection.count_documents({})
     total_files_renamed = await db.get_total_files_renamed()
     total_renamed_size = await db.get_total_renamed_size()
     
@@ -60,19 +48,31 @@ async def about_callback(client, callback_query):
         f"👥 Support Group: [Elites Assistance](https://t.me/Elites_Assistance)\n"
         f"🤖 GitHub: [Click Here](https://github.com/Orewa-Kaizen)\n\n"
         f"📂 Total Files Renamed: {total_files_renamed}\n"
-        f"🗃 Total Renamed Size: {humanbytes(int(total_renamed_size))}\n\n"
-        f"⭐ Star Count: {star_count}\n"
+        f"🗃 Total Renamed Size: {humanbytes(int(total_renamed_size))}"
     )
 
     keyboard = InlineKeyboardMarkup(
         [
-            [InlineKeyboardButton("Bᴀᴄᴋ", callback_data="start"),
-             InlineKeyboardButton("⭐ Sᴛᴀʀ", callback_data="vote")],
+            [InlineKeyboardButton("Bᴀᴄᴋ", callback_data="start")],
         ]
     )
 
     await callback_query.message.edit_text(text=text, reply_markup=keyboard)
     await callback_query.answer()
+
+@Client.on_callback_query(filters.regex('close'))
+async def close_callback(client, callback_query):
+    # Delete the post triggered by the command
+    try:
+        await callback_query.message.delete()  # Delete the post created by the bot
+        if callback_query.message.reply_to_message:  # Check if there's a reply to message (original command)
+            await callback_query.message.reply_to_message.delete()  # Delete the message that triggered the post
+    except Exception as e:
+        await callback_query.answer(text=f"Error: {e}", show_alert=True)
+    else:
+        await callback_query.answer(text="Successfully Closed", show_alert=True)
+        
+
 
 @Client.on_callback_query(filters.regex('vote'))
 async def vote_callback(client, callback_query):
