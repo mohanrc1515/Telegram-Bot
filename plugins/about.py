@@ -4,6 +4,8 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram import Client, filters
 from pymongo import MongoClient
 from config import Config
+from helper.database import db
+from helper.progress import humanbytes
 
 # Database setup
 client = MongoClient(Config.DB_URL)
@@ -14,19 +16,23 @@ stars_collection = db["stars"]
 async def aboutcm(client, message):
     # Retrieve star count
     star_count = stars_collection.count_documents({})
+    total_files_renamed = await db.get_total_files_renamed()
+    total_renamed_size = await db.get_total_renamed_size()
 
     await message.reply_photo(
         photo="https://envs.sh/C5Q.jpg",
         caption=(
             f"<b><u>AUTO RENAME BOT</b></u>\n\n"
             f"👑 Owner: {message.from_user.mention}\n"
-            f"🧑🏻‍💻 Developer: [Zᴇɴɪᴛꜱᴜ 様](https://t.me/ElitesCrewBot)\n"
+            f"🧑🏻‍💻 Developer: [Sʜᴀᴅᴏᴡ 様](https://t.me/ElitesCrewBot)\n"
             f"🗂️ Database: [Mongo Db](https://www.mongodb.com/)\n"
             f"📡 Server: [Heroku](https://www.heroku.com/)\n"
             f"🗣️ Language: [Python](https://www.python.org/)\n"
             f"📢 Updates Channel: [Elites Botz](https://t.me/Elites_Bots)\n"
             f"👥 Support Group: [Elites Assistance](https://t.me/Elites_Assistance)\n"
-            f"🤖 GitHub: [Click Here](https://github.com/ElitesBotz)\n\n"
+            f"🤖 GitHub: [Click Here](https://github.com/Orewa-Kaizen)\n\n"
+            f"📂 Total Files Renamed: {total_files_renamed}\n"
+            f"🗃 Total Renamed Size: {humanbytes(int(total_renamed_size))}\n\n"
             f"⭐ Star Count: {star_count}\n"
         ),
         reply_markup=InlineKeyboardMarkup(
@@ -40,16 +46,21 @@ async def aboutcm(client, message):
 @Client.on_callback_query(filters.regex('about'))
 async def about_callback(client, callback_query):
     star_count = stars_collection.count_documents({})
+    total_files_renamed = await db.get_total_files_renamed()
+    total_renamed_size = await db.get_total_renamed_size()
+    
     text = (
         f"<b><u>AUTO RENAME BOT</b></u>\n\n"
         f"👑 Owner: {callback_query.from_user.mention}\n"
-        f"🧑🏻‍💻 Developer: [Zᴇɴɪᴛꜱᴜ 様](https://t.me/ElitesCrewBot)\n"
+        f"🧑🏻‍💻 Developer: [Sʜᴀᴅᴏᴡ 様](https://t.me/ElitesCrewBot)\n"
         f"🗂️ Database: [Mongo Db](https://www.mongodb.com/)\n"
         f"📡 Server: [Heroku](https://www.heroku.com/)\n"
         f"🗣️ Language: [Python](https://www.python.org/)\n"
         f"📢 Updates Channel: [Elites Botz](https://t.me/Elites_Bots)\n"
         f"👥 Support Group: [Elites Assistance](https://t.me/Elites_Assistance)\n"
-        f"🤖 GitHub: [Click Here](https://github.com/ElitesBotz)\n\n"
+        f"🤖 GitHub: [Click Here](https://github.com/Orewa-Kaizen)\n\n"
+        f"📂 Total Files Renamed: {total_files_renamed}\n"
+        f"🗃 Total Renamed Size: {humanbytes(int(total_renamed_size))}\n\n"
         f"⭐ Star Count: {star_count}\n"
     )
 
