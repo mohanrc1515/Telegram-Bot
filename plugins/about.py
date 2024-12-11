@@ -5,7 +5,7 @@ from pyrogram import Client, filters
 from helper.database import db
 from helper.utils import humanbytes
 
-@Client.on_message(filters.private & filters.command(["about"]))
+@Client.on_message(filters.command(["about"]))
 async def aboutcm(client, message):
     total_files_renamed = await db.get_total_files_renamed()
     total_renamed_size = await db.get_total_renamed_size()
