@@ -17,7 +17,7 @@ class Database:
         self.referral_col = self.db.referrals
         self.metadata_col = self.db.metadata
         self.file_count_col = self.db.file_counts
-	self.global_stats_col = self.db.global_stats
+        self.global_stats_col = self.db.global_stats
         
     # Metadata handling
     async def metadata_data(self, id):
@@ -30,11 +30,12 @@ class Database:
             audio="@Elites_Bots",
             video="Encoded By @Elites_Bots"
         )
+
     async def add_metadata(self, id):
         data = await self.metadata_data(id)
         await self.metadata_col.insert_one(data)
-        
-        
+
+              
     async def metadata_exists(self, chat_id):
         meta = await self.metadata_col.find_one({'_id': chat_id})
         return meta is not None        
