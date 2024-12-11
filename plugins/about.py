@@ -5,7 +5,7 @@ from pyrogram import Client, filters
 from pymongo import MongoClient
 from config import Config
 from helper.database import db
-from helper.progress import humanbytes
+from helper.utils import humanbytes
 
 # Database setup
 client = MongoClient(Config.DB_URL)
