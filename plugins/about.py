@@ -27,7 +27,7 @@ async def aboutcm(client, message):
         ),
         reply_markup=InlineKeyboardMarkup(
             [
-                [InlineKeyboardButton("✗ Close ✗", callback_data="close")
+                [InlineKeyboardButton("✗ Close ✗", callback_data="close")]
             ]
         )
     )
