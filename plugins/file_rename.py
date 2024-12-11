@@ -210,7 +210,7 @@ async def handle_files(client: Client, message: Message):
     elif message.photo:
         # Telegram photos provide a list of sizes, use the largest one
         file_size = message.photo[-1].file_size if message.photo else 0
-   else:
+    else:
         file_size = 0  # Default to 0 if no file size is found
 
     # Increment global counters
