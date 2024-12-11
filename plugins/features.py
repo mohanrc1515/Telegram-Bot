@@ -17,34 +17,36 @@ async def features_command(client, message):
     await message.reply_photo(
         photo="https://graph.org/file/304a4a1c70aa0c520e956.jpg",
         caption="""
-📌 **Welcome to our Feature Showcase!** 📌
+⚡ **Welcome to our Feature Showcase !** ⚡ 
 
-Here are some of the advanced functionalities you can explore with our bot:
-
-🔹 **Autorename Feature**  
-🔹 **Metadata Editing**
-🔹 **Files Dumping**
-🔹 **Files Sequencing**
-🔹 **Refer & Gain Authentication**  
-🔹 **Custom Thumbnail & Caption**
+➤ **Autorename Feature**  
+➤ **Metadata Editing**
+➤ **Files Dumping**
+➤ **Files Sequencing**
+➤ **Refer & Gain Authentication**  
+➤ **Custom Thumbnail & Caption**
 
 Feel free to explore these features by using the buttons below. For suggestions, reach out to our [Support Group](https://t.me/elites_assistance).
        """,
         reply_markup=InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("Autorename", callback_data=AUTO_RENAME_CALLBACK),
-                InlineKeyboardButton("Metadata", callback_data=META_DATA_CALLBACK),
-                InlineKeyboardButton("Thumbnail", callback_data=THUMBNAIL_SETUP_CALLBACK)
+                InlineKeyboardButton("🎥 Autorename", callback_data="auto_rename"),
+                InlineKeyboardButton("📝 Metadata", callback_data="meta_data"),
             ],
             [
-                InlineKeyboardButton("Caption", callback_data=CAPTION_SETUP_CALLBACK),
-                InlineKeyboardButton("Dump", callback_data=DUMP_CALLBACK),
-                InlineKeyboardButton("Refer", callback_data=AUTHENTICATION_CALLBACK)
+                InlineKeyboardButton("📸 Thumbnail", callback_data="thumbnail_setup"),
+                InlineKeyboardButton("🗒 Caption", callback_data="caption_setup"),
             ],
             [
-                InlineKeyboardButton("Sequencing", callback_data=FILE_SEQUENCE_CALLBACK),
-                InlineKeyboardButton("Back", callback_data="commands"),
-                InlineKeyboardButton("Support", url="https://t.me/elites_assistance")
+                InlineKeyboardButton("📂 Sequencing", callback_data="file_sequence"),
+                InlineKeyboardButton("🌟 Refer", callback_data="authentication"),
+            ],
+            [
+                InlineKeyboardButton("📤 Dump", callback_data="dump"),
+                InlineKeyboardButton("🔄 Back to Menu", callback_data="commands"),
+            ],
+            [
+                InlineKeyboardButton("💬 Support", url="https://t.me/elites_assistance"),
             ]
         ])
     )
@@ -53,34 +55,36 @@ Feel free to explore these features by using the buttons below. For suggestions,
 async def features_callback(client, query: CallbackQuery):
     await query.message.edit_text(
         text="""
-📌 **Welcome to our Feature Showcase!** 📌
+⚡ **Welcome to our Feature Showcase !** ⚡ 
 
-Here are some of the advanced functionalities you can explore with our bot:
-
-🔹 **Autorename Feature**  
-🔹 **Metadata Editing**
-🔹 **Files Dumping**
-🔹 **Files Sequencing**
-🔹 **Refer & Gain Authentication**  
-🔹 **Custom Thumbnail & Caption**
+➤ **Autorename Feature**  
+➤ **Metadata Editing**
+➤ **Files Dumping**
+➤ **Files Sequencing**
+➤ **Refer & Gain Authentication**  
+➤ **Custom Thumbnail & Caption**
 
 Feel free to explore these features by using the buttons below. For suggestions, reach out to our [Support Group](https://t.me/elites_assistance).
         """,
         reply_markup=InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("Autorename", callback_data=AUTO_RENAME_CALLBACK),
-                InlineKeyboardButton("Metadata", callback_data=META_DATA_CALLBACK),
-                InlineKeyboardButton("Thumbnail", callback_data=THUMBNAIL_SETUP_CALLBACK)
+                InlineKeyboardButton("🎥 Autorename", callback_data="auto_rename"),
+                InlineKeyboardButton("📝 Metadata", callback_data="meta_data"),
             ],
             [
-                InlineKeyboardButton("Caption", callback_data=CAPTION_SETUP_CALLBACK),
-                InlineKeyboardButton("Dump", callback_data=DUMP_CALLBACK),
-                InlineKeyboardButton("Refer", callback_data=AUTHENTICATION_CALLBACK)
+                InlineKeyboardButton("📸 Thumbnail", callback_data="thumbnail_setup"),
+                InlineKeyboardButton("🗒 Caption", callback_data="caption_setup"),
             ],
             [
-                InlineKeyboardButton("Sequencing", callback_data=FILE_SEQUENCE_CALLBACK),
-                InlineKeyboardButton("Back", callback_data="commands"),
-                InlineKeyboardButton("Support", url="https://t.me/elites_assistance")
+                InlineKeyboardButton("📂 Sequencing", callback_data="file_sequence"),
+                InlineKeyboardButton("🌟 Refer", callback_data="authentication"),
+            ],
+            [
+                InlineKeyboardButton("📤 Dump", callback_data="dump"),
+                InlineKeyboardButton("🔄 Back to Menu", callback_data="commands"),
+            ],
+            [
+                InlineKeyboardButton("💬 Support", url="https://t.me/elites_assistance"),
             ]
         ])
     )
