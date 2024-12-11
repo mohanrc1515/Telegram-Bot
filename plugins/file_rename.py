@@ -182,46 +182,46 @@ async def handle_files(client: Client, message: Message):
     if not format_template:
         return await message.reply_text("Please Set An Auto Rename Format First Using /autorename")    
         
-# Initialize user-specific data if not present
-if user_id not in user_files:
-    user_files[user_id] = []  # List for storing user-specific files/messages
-if user_id not in file_count:
-    file_count[user_id] = await db.get_file_count(user_id)  # Fetch user's file count from DB
+    # Initialize user-specific data if not present
+    if user_id not in user_files:
+        user_files[user_id] = []  # List for storing user-specific files/messages
+    if user_id not in file_count:
+        file_count[user_id] = await db.get_file_count(user_id)  # Fetch user's file count from DB
 
-# Fetch and initialize global counters
-if "global_stats" not in globals():
-    global_stats = {
-        "total_files_renamed": await db.get_total_files_renamed(),
-        "total_renamed_size": await db.get_total_renamed_size()
-    }
+    # Fetch and initialize global counters
+    if "global_stats" not in globals():
+        global_stats = {
+            "total_files_renamed": await db.get_total_files_renamed(),
+            "total_renamed_size": await db.get_total_renamed_size()
+        }
 
-# Increment user-specific file count
-file_count[user_id] += 1
-await db.update_file_count(user_id, file_count[user_id])
+    # Increment user-specific file count
+    file_count[user_id] += 1
+    await db.update_file_count(user_id, file_count[user_id])
 
-# Extract file size based on file type
-file_size = 0
-if message.document:
-    file_size = message.document.file_size
-elif message.video:
-    file_size = message.video.file_size
-elif message.audio:
-    file_size = message.audio.file_size
-elif message.photo:
-    # Telegram photos provide a list of sizes, use the largest one
-    file_size = message.photo[-1].file_size if message.photo else 0
-else:
-    file_size = 0  # Default to 0 if no file size is found
+    # Extract file size based on file type
+    file_size = 0
+    if message.document:
+        file_size = message.document.file_size
+    elif message.video:
+        file_size = message.video.file_size
+    elif message.audio:
+        file_size = message.audio.file_size
+    elif message.photo:
+        # Telegram photos provide a list of sizes, use the largest one
+        file_size = message.photo[-1].file_size if message.photo else 0
+   else:
+        file_size = 0  # Default to 0 if no file size is found
 
-# Increment global counters
-global_stats["total_files_renamed"] += 1
-await db.update_total_files_renamed(global_stats["total_files_renamed"])
+    # Increment global counters
+    global_stats["total_files_renamed"] += 1
+    await db.update_total_files_renamed(global_stats["total_files_renamed"])
 
-global_stats["total_renamed_size"] += file_size
-await db.update_total_renamed_size(global_stats["total_renamed_size"])
+    global_stats["total_renamed_size"] += file_size
+    await db.update_total_renamed_size(global_stats["total_renamed_size"])
 
-# Append the current file/message to the user's file list
-user_files[user_id].append(message)
+    # Append the current file/message to the user's file list
+    user_files[user_id].append(message)
 
     
     file = message.document or message.video or message.audio
