@@ -17,6 +17,7 @@ class Database:
         self.referral_col = self.db.referrals
         self.metadata_col = self.db.metadata
         self.file_count_col = self.db.file_counts
+	self.global_stats_col = self.db.global_stats
         
     # Metadata handling
     async def metadata_data(self, id):
@@ -79,7 +80,30 @@ class Database:
     async def delete_user(self, user_id):
         await self.user_col.delete_many({'_id': int(user_id)})
 
-    # Generic setter and getter for user attributes
+   # Global statistics handling
+    async def get_total_files_renamed(self):
+        result = await self.global_stats_col.find_one({"_id": "total_files_renamed"})
+        return result.get("value", 0) if result else 0
+
+    async def update_total_files_renamed(self, count):
+        await self.global_stats_col.update_one(
+            {"_id": "total_files_renamed"},
+            {"$set": {"value": count}},
+            upsert=True
+        )
+
+    async def get_total_renamed_size(self):
+        result = await self.global_stats_col.find_one({"_id": "total_renamed_size"})
+        return result.get("value", 0) if result else 0
+
+    async def update_total_renamed_size(self, size):
+        await self.global_stats_col.update_one(
+            {"_id": "total_renamed_size"},
+            {"$set": {"value": size}},
+            upsert=True
+	)	
+	
+	# Generic setter and getter for user attributes
     async def set_user_attr(self, id, field, value):
         await self.user_col.update_one({'_id': int(id)}, {'$set': {field: value}})
 
