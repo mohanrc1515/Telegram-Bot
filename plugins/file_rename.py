@@ -49,7 +49,8 @@ async def send_with_flood_wait(client, method, **kwargs):
             try:
                 return await method(**kwargs)
             except FloodWait as e:
-                print(f"Flood wait triggered: Waiting for {e.value} seconds")                await asyncio.sleep(e.value)
+                print(f"Flood wait triggered: Waiting for {e.value} seconds")                
+                await asyncio.sleep(e.value)
                 
 
 async def safe_edit_message(message, text):
@@ -59,7 +60,7 @@ async def safe_edit_message(message, text):
     except FloodWait as e:
         print(f"Flood wait triggered: Waiting for {e.value} seconds")
         await asyncio.sleep(e.value)
-        await safe_edit_message(message, text)  # Retry after waiting        
+        await safe_edit_message(message, text)  # Retry after waiting                
                 
 # Start sequencing command
 @Client.on_message(filters.command("startsequence") & filters.private)
