@@ -7,7 +7,12 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 import asyncio
 from pyrogram.errors import FloodWait
 
+last_edit_time = 0
+EDIT_COOLDOWN = 3 
+
 async def progress_for_pyrogram(current, total, ud_type, message, start):
+    global last_edit_time
+
     now = time.time()
     diff = now - start
     if round(diff % 5.00) == 0 or current == total:
@@ -22,7 +27,7 @@ async def progress_for_pyrogram(current, total, ud_type, message, start):
 
         progress = "{0}{1}".format(
             ''.join(["■" for _ in range(math.floor(percentage / 5))]),
-            ''.join(["□" for _ in range(20 - math.floor(percentage / 5))])
+            ''.join(["□" for _ in range(10 - math.floor(percentage / 5))])
         )
         tmp = progress + Txt.PROGRESS_BAR.format(
             round(percentage, 2),
@@ -32,16 +37,24 @@ async def progress_for_pyrogram(current, total, ud_type, message, start):
             estimated_total_time if estimated_total_time != '' else "0 s"
         )
 
-        try:
-            await message.edit(text=f"{ud_type}\n\n{tmp}")
-        except FloodWait as e:
-            # If flood wait occurs, wait for the time specified in the exception
-            print(f"Flood wait for {e.value} seconds")
-            await asyncio.sleep(e.value)  # Sleep for the required time and retry
-            # Retry the edit after waiting
-            await message.edit(text=f"{ud_type}\n\n{tmp}")
-        except Exception as e:
-            print(f"Error editing message: {e}")
+        # Check if enough time has passed since the last edit to respect the cooldown
+        if now - last_edit_time >= EDIT_COOLDOWN:
+            try:
+                await message.edit(text=f"{ud_type}\n\n{tmp}")
+                last_edit_time = now  # Update the last edit time
+            except FloodWait as e:
+                # If flood wait occurs, wait for the time specified in the exception
+                print(f"Flood wait for {e.value} seconds")
+                await asyncio.sleep(e.value)  # Sleep for the required time and retry
+                # Retry the edit after waiting
+                await message.edit(text=f"{ud_type}\n\n{tmp}")
+                last_edit_time = time.time()  # Update the last edit time after the successful edit
+            except Exception as e:
+                print(f"Error editing message: {e}")
+        else:
+            # If cooldown hasn't passed, just skip the edit attempt
+            print(f"Skipping edit to avoid flood wait. Cooldown not yet passed.")
+
 
 
 def humanbytes(size):
