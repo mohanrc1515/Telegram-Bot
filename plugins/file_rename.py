@@ -40,6 +40,14 @@ async def process_task(user_id, task):
     async with semaphore:
         await task()
 
+async def send_with_flood_wait(client, method, **kwargs):
+    while True:
+        try:
+            return await method(**kwargs)
+        except FloodWait as e:
+            print(f"Flood wait triggered: Waiting for {e.value} seconds")
+            await asyncio.sleep(e.value)
+
 # Start sequencing command
 @Client.on_message(filters.command("startsequence") & filters.private)
 async def start_sequence(client, message: Message):
@@ -406,7 +414,8 @@ async def handle_files(client: Client, message: Message):
                 
             else:
                 if file_type == "document":
-                    await client.send_document(
+                    response = await send_with_flood_wait(
+                        client, client.send_document,
                         chat_id=dump_settings['channel'],
                         document=metadata_path if _bool_metadata else file_path,
                         thumb=ph_path,
@@ -416,7 +425,8 @@ async def handle_files(client: Client, message: Message):
                     )
                     
                 elif file_type == "video":
-                    await client.send_video(
+                    response = await send_with_flood_wait(
+                        client, client.send_video,
                         chat_id=dump_settings['channel'],
                         video=metadata_path if _bool_metadata else file_path,
                         duration=duration,
@@ -427,7 +437,8 @@ async def handle_files(client: Client, message: Message):
                     )
                     
                 elif file_type == "audio":
-                    await client.send_audio(
+                    response = await send_with_flood_wait(
+                        client, client.send_audio,
                         chat_id=dump_settings['channel'],
                         audio=metadata_path if _bool_metadata else file_path,
                         duration=duration,
@@ -447,7 +458,8 @@ async def handle_files(client: Client, message: Message):
             # Regular upload to the user
             try:
                 if file_type == "document":
-                    await client.send_document(
+                    response = await send_with_flood_wait(
+                        client, client.send_document,
                         chat_id=message.chat.id,
                         document=metadata_path if _bool_metadata else file_path,
                         thumb=ph_path,
@@ -457,7 +469,8 @@ async def handle_files(client: Client, message: Message):
                     )
                     
                 elif file_type == "video":
-                    await client.send_video(
+                    response = await send_with_flood_wait(
+                        client, client.send_video,
                         chat_id=message.chat.id,
                         video=metadata_path if _bool_metadata else file_path,
                         duration=duration,
@@ -468,7 +481,8 @@ async def handle_files(client: Client, message: Message):
                     )
                     
                 elif file_type == "audio":
-                    await client.send_audio(
+                    response = await send_with_flood_wait(
+                        client, client.send_audio,
                         chat_id=message.chat.id,
                         audio=metadata_path if _bool_metadata else file_path,
                         duration=duration,
