@@ -297,7 +297,7 @@ async def handle_files(client: Client, message: Message):
         ph_path = None
         c_caption = await db.get_caption(message.chat.id)
         c_thumb = await db.get_thumbnail(message.chat.id)
-        caption = c_caption.format(filename=new_file_name, filesize=humanbytes(message.document.file_size), duration=convert(duration)) if c_caption else none
+        caption = c_caption.format(filename=new_file_name, filesize=humanbytes(message.document.file_size), duration=convert(duration)) if c_caption else None
         
          # Initialize user-specific data if not present
         if user_id not in user_files:
