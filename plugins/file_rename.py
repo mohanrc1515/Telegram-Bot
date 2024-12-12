@@ -445,14 +445,14 @@ async def handle_files(client: Client, message: Message):
                     
                 elif file_type == "audio":
                     await client.send_audio(
-                        chat_id=dump_settings['channel'],
+                        chat_id=message.chat.id,
                         audio=metadata_path if _bool_metadata else file_path,
                         duration=duration,
                         thumb=ph_path,
                         caption=caption,
                         progress=progress_for_pyrogram,
                         progress_args=("Uploading...", upload_msg, time.time())
-                    )
+                    )                    
                 
             except Exception as e:
                 await message.reply_text(f"Upload failed: {e}")
