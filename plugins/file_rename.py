@@ -545,6 +545,16 @@ async def handle_files(client: Client, message: Message):
             await process_task(user_id, task)
             user_queue.task_done()
 
+# Define the priority for each quality
+quality_priority = {
+    "480p": 1,
+    "720p": 2,
+    "1080p": 3,
+    "2160p": 4,
+    "4k": 5,
+    "8k": 6
+}
+
 @Client.on_message(filters.command("sequencedump") & filters.private)
 async def sequence_dump(client, message: Message):
     user_id = message.from_user.id
@@ -560,9 +570,16 @@ async def sequence_dump(client, message: Message):
         item['episode'] = int(extract_episode_number(file_name) or 0)
         item['chapter'] = int(extract_chapter_number(file_name) or 0)
         item['volume'] = int(extract_volume_number(file_name) or 0)
+        item['quality'] = extract_quality(file_name) or '0'
 
-    # Sorting: Prioritize by season, episode, volume, then chapter
-    queue.sort(key=lambda x: (x['season'], x['episode'], x['volume'], x['chapter']))
+    # Sorting: Prioritize by season, episode, volume, chapter, then quality
+    queue.sort(key=lambda x: (
+        x['season'], 
+        x['episode'], 
+        x['volume'], 
+        x['chapter'], 
+        quality_priority.get(x['quality'], float('inf'))  # Default to highest priority if quality is None
+    ))
 
     dump_channel = await db.get_dump_channel(user_id)
     if not dump_channel:
