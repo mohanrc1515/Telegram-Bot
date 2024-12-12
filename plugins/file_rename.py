@@ -52,6 +52,26 @@ async def send_with_flood_wait(client, method, **kwargs):
                 print(f"Flood wait triggered: Waiting for {e.value} seconds")
                 await asyncio.sleep(e.value)
                 
+last_edit_time = {}
+EDIT_COOLDOWN = 5
+
+async def safe_edit_message(message, text):
+    user_id = message.from_user.id
+    current_time = time.time()
+
+    # Check if enough time has passed since the last edit
+    if user_id not in last_edit_time or current_time - last_edit_time[user_id] >= EDIT_COOLDOWN:
+        try:
+            await message.edit(text)
+            last_edit_time[user_id] = current_time  # Update last edit time
+        except FloodWait as e:
+            print(f"Flood wait triggered: Waiting for {e.value} seconds")
+            await asyncio.sleep(e.value)
+            await safe_edit_message(message, text)
+    else:
+        print("Edit skipped to avoid flood wait.")
+        
+                
 # Start sequencing command
 @Client.on_message(filters.command("startsequence") & filters.private)
 async def start_sequence(client, message: Message):
@@ -247,8 +267,8 @@ async def handle_files(client: Client, message: Message):
     download_msg = await message.reply_text("Your file has been added to the queue and will be processed soon.")
    
     async def task():
-        await asyncio.sleep(2)
-        await download_msg.edit("Processing... ⚡")
+        await asyncio.sleep(0.5)
+        await safe_edit_message(download_msg, "Processing... ⚡")
         try:
             path = await client.download_media(
                 message=file,
@@ -281,8 +301,8 @@ async def handle_files(client: Client, message: Message):
             await add_metadata(path, metadata_path, sub_title, sub_author, sub_subtitle, sub_audio, sub_video, sub_artist, download_msg)
 
         else:
-            await asyncio.sleep(4)
-            await download_msg.edit("Processing....  ⚡")
+            await asyncio.sleep(2)
+            await safe_edit_message(download_msg, "Processing... ⚡")
             
         duration = 0
         try:
@@ -293,7 +313,7 @@ async def handle_files(client: Client, message: Message):
             print(f"Error getting duration: {e}")
             
         try:
-            upload_msg = await download_msg.edit("Trying To Upload...")
+            upload_msg = await safe_edit_message(upload_msg, "Upload in progress... ⚡")
         except FloodWait as e:
             await asyncio.sleep(e.value)  # Wait dynamically if FloodWait error occurs
             upload_msg = await download_msg.edit("Trying To Upload...")  # Retry edit
