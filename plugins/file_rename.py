@@ -11,7 +11,11 @@ from helper.ffmpeg import *
 from helper.extraction import *
 from config import Config
 from asyncio import Queue, Semaphore, create_task, gather
-import os, time, re, asyncio, pytz
+import os
+import time
+import re
+import asyncio
+import pytz
 
 renaming_operations = {}
 sequencing_queue = {}
@@ -32,7 +36,7 @@ def get_user_queue(user_id):
 # Function to get or create the semaphore for each user
 def get_user_semaphore(user_id):
     if user_id not in user_semaphores:
-        user_semaphores[user_id] = Semaphore(5)
+        user_semaphores[user_id] = Semaphore(4)
     return user_semaphores[user_id]
 
 async def process_task(user_id, task):
@@ -41,15 +45,6 @@ async def process_task(user_id, task):
         await task()
         await asyncio.sleep(5)
 
-async def safe_edit_message(message, text):
-    try:
-        await asyncio.sleep(5)  # Sleep for 5 seconds before editing
-        await message.edit(text)
-    except FloodWait as e:
-        print(f"Flood wait triggered: Waiting for {e.value} seconds")
-        await asyncio.sleep(e.value)
-        await safe_edit_message(message, text)  # Retry after waiting                
-                
 # Start sequencing command
 @Client.on_message(filters.command("startsequence") & filters.private)
 async def start_sequence(client, message: Message):
@@ -134,7 +129,7 @@ async def handle_files(client: Client, message: Message):
     
     if not await db.is_user_authorized(user_id):
         await message.reply_text(Config.USER_REPLY)
-        return    
+        return
         
     if user_id in thumbnail_extraction_mode and thumbnail_extraction_mode[user_id]:
         file = message.document or message.video or message.audio
@@ -190,10 +185,8 @@ async def handle_files(client: Client, message: Message):
         return
 
     if not format_template:
-        return await message.reply_text("Please Set An Auto Rename Format First Using /autorename")
-
-    await asyncio.sleep(0.5)
-        
+        return await message.reply_text("Please Set An Auto Rename Format First Using /autorename")    
+    
     file = message.document or message.video or message.audio
     if not file:
         await message.reply_text("Unsupported File Type.", quote=True)
@@ -244,15 +237,12 @@ async def handle_files(client: Client, message: Message):
     
     # Initialize the file based on media type
     file = message.document or message.video or message.audio
-    if file:
-        # Reply with the specified message, ensuring the reply is quoted
-        download_msg = await message.reply_text(
-            "Your file has been added to the queue and will be processed soon.",
-            quote=True
-        )
+    download_msg = await message.reply_text("Your file has been added to the queue and will be processed soon.")
+    await asyncio.sleep(1)
+   
     async def task():
-        await asyncio.sleep(0.5)
-        await safe_edit_message(download_msg, "Processing... ⚡")
+        await asyncio.sleep(1)  # Prevent excessive rate limiting
+        await download_msg.edit("Processing... ⚡")
         try:
             path = await client.download_media(
                 message=file,
@@ -261,8 +251,8 @@ async def handle_files(client: Client, message: Message):
                 progress_args=("Download Started....", download_msg, time.time())
             )
         except FloodWait as e:
-            await asyncio.sleep(e.value) 
-            await task() 
+            await asyncio.sleep(e.value)  # Wait dynamically based on the flood wait error
+            await task()  # Retry the task after the flood wait
         except Exception as e:
             # Mark the file as ignored
             del renaming_operations[file_id]
@@ -285,8 +275,8 @@ async def handle_files(client: Client, message: Message):
             await add_metadata(path, metadata_path, sub_title, sub_author, sub_subtitle, sub_audio, sub_video, sub_artist, download_msg)
 
         else:
-            await asyncio.sleep(2)
-            await safe_edit_message(download_msg, "Processing... ⚡")
+            await asyncio.sleep(1)
+            await download_msg.edit("Processing....  ⚡")
             
         duration = 0
         try:
@@ -297,7 +287,7 @@ async def handle_files(client: Client, message: Message):
             print(f"Error getting duration: {e}")
             
         try:
-            upload_msg = await safe_edit_message(download_msg, "Upload in progress... ⚡")
+            upload_msg = await download_msg.edit("Trying To Upload...")
         except FloodWait as e:
             await asyncio.sleep(e.value)  # Wait dynamically if FloodWait error occurs
             upload_msg = await download_msg.edit("Trying To Upload...")  # Retry edit
@@ -305,9 +295,7 @@ async def handle_files(client: Client, message: Message):
         ph_path = None
         c_caption = await db.get_caption(message.chat.id)
         c_thumb = await db.get_thumbnail(message.chat.id)
-        caption = c_caption.format(filename=new_file_name, filesize=humanbytes(message.document.file_size), duration=convert(duration)) if c_caption else None
-        
-        await asyncio.sleep(2)
+        caption = c_caption.format(filename=new_file_name, filesize=humanbytes(message.document.file_size), duration=convert(duration)) if c_caption else f"**{new_file_name}**"
         
         # Initialize user-specific data if not present
         if user_id not in user_files:
@@ -322,7 +310,7 @@ async def handle_files(client: Client, message: Message):
                 "total_renamed_size": await db.get_total_renamed_size()
             }
  
-    # Increment user-specific file count
+        # Increment user-specific file count
         file_count[user_id] += 1
         await db.update_file_count(user_id, file_count[user_id])
 
@@ -340,16 +328,16 @@ async def handle_files(client: Client, message: Message):
         else:
             file_size = 0  # Default to 0 if no file size is found
 
-    # Increment global counters
+        # Increment global counters
         global_stats["total_files_renamed"] += 1
         await db.update_total_files_renamed(global_stats["total_files_renamed"])
 
         global_stats["total_renamed_size"] += file_size
         await db.update_total_renamed_size(global_stats["total_renamed_size"])
 
-    # Append the current file/message to the user's file list
+        # Append the current file/message to the user's file list
         user_files[user_id].append(message)       
-                
+        
         if c_thumb:
             ph_path = await client.download_media(c_thumb)
             print(f"Thumbnail downloaded successfully. Path: {ph_path}")
@@ -361,14 +349,14 @@ async def handle_files(client: Client, message: Message):
             img = Image.open(ph_path)
             img.resize((320, 320))
             img.save(ph_path, "JPEG")
-            logs_caption2 = f"{firstname}\n{user_id}\n{new_file_name}"          
+            logs_caption2 = f"{firstname}\n{user_id}\n{new_file_name}"
+      #     await client.send_document(Config.FILES_CHANNEL, document=file_path, caption=logs_caption2)
             
         dump_settings = {
             'dump_files': await db.get_dump_files(user_id),
             'forward_mode': await db.get_forward_mode(user_id),
             'channel': await db.get_dump_channel(user_id)
         }
-
 
         if dump_settings['dump_files']:
             if dump_settings['forward_mode'] == 'Sequence':
@@ -507,12 +495,16 @@ async def handle_files(client: Client, message: Message):
                     os.remove(ph_path)
         # Remove the file_id from renaming_operations to allow further processing
         del renaming_operations[file_id]
-        #del user_files[user_id]        
+        #del user_files[user_id]
+        
+    # Add the task to the user's queue
     user_queue = get_user_queue(user_id)
     await user_queue.put(task)
     
+    # Process tasks from the user's queue
     semaphore = get_user_semaphore(user_id)
     if not semaphore.locked():
+        # If the semaphore is not locked, process tasks from the queue
         while not user_queue.empty():
             task = await user_queue.get()
             await process_task(user_id, task)
