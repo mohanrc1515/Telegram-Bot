@@ -3,5 +3,5 @@
 </h2>
 
 
-![Typing SVG](https://readme-typing-svg.herokuapp.com/?lines=AUTO+RENAMING+!;CREATED+BY+SHADOW!;A+ADVANCE+AUTO+RENAME+BOT!)
+![Typing SVG](https://readme-typing-svg.herokuapp.com/?lines=AUTO+RENAME+BOT+!;CREATED+BY+SHADOW!)
 </p>
