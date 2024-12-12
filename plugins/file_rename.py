@@ -41,18 +41,6 @@ async def process_task(user_id, task):
         await task()
         await asyncio.sleep(5)
 
-upload_semaphore = Semaphore(2)
-
-async def send_with_flood_wait(client, method, **kwargs):
-    while True:
-        async with upload_semaphore:
-            try:
-                return await method(**kwargs)
-            except FloodWait as e:
-                print(f"Flood wait triggered: Waiting for {e.value} seconds")                
-                await asyncio.sleep(e.value)
-                
-
 async def safe_edit_message(message, text):
     try:
         await asyncio.sleep(5)  # Sleep for 5 seconds before editing
@@ -383,9 +371,9 @@ async def handle_files(client: Client, message: Message):
 
         if dump_settings['dump_files']:
             if dump_settings['forward_mode'] == 'Sequence':
+                # Upload the file first and get the response
                 if file_type == "document":
-                    response = await send_with_flood_wait(
-                        client, client.send_document,
+                    response = await client.send_document(
                         chat_id=-1002388905688,
                         document=metadata_path if _bool_metadata else file_path,
                         thumb=ph_path,
@@ -393,10 +381,9 @@ async def handle_files(client: Client, message: Message):
                         progress=progress_for_pyrogram,
                         progress_args=("Uploading...", upload_msg, time.time())
                     )
-                    hinata = response.document.file_id
+                    hinata = response.document.file_id  # Get the file ID
                 elif file_type == "video":
-                    response = await send_with_flood_wait(
-                        client, client.send_video,
+                    response = await client.send_video(
                         chat_id=-1002388905688,
                         video=metadata_path if _bool_metadata else file_path,
                         duration=duration,
@@ -405,10 +392,9 @@ async def handle_files(client: Client, message: Message):
                         progress=progress_for_pyrogram,
                         progress_args=("Uploading...", upload_msg, time.time())
                     )
-                    hinata = response.video.file_id
+                    hinata = response.video.file_id  # Get the file ID
                 elif file_type == "audio":
-                    response = await send_with_flood_wait(
-                        client, client.send_audio,
+                    response = await client.send_audio(
                         chat_id=-1002388905688,
                         audio=metadata_path if _bool_metadata else file_path,
                         duration=duration,
@@ -419,6 +405,7 @@ async def handle_files(client: Client, message: Message):
                     )
                     hinata = response.audio.file_id
 
+                # Add the file to the sequence queue
                 await db.add_to_sequence_queue(user_id, {
                     'file_id': hinata,
                     'file_name': new_file_name,
@@ -436,8 +423,7 @@ async def handle_files(client: Client, message: Message):
                 
             else:
                 if file_type == "document":
-                    response = await send_with_flood_wait(
-                        client, client.send_document,
+                    await client.send_document(
                         chat_id=dump_settings['channel'],
                         document=metadata_path if _bool_metadata else file_path,
                         thumb=ph_path,
@@ -447,8 +433,7 @@ async def handle_files(client: Client, message: Message):
                     )
                     
                 elif file_type == "video":
-                    response = await send_with_flood_wait(
-                        client, client.send_video,
+                    await client.send_video(
                         chat_id=dump_settings['channel'],
                         video=metadata_path if _bool_metadata else file_path,
                         duration=duration,
@@ -459,8 +444,7 @@ async def handle_files(client: Client, message: Message):
                     )
                     
                 elif file_type == "audio":
-                    response = await send_with_flood_wait(
-                        client, client.send_audio,
+                    await client.send_audio(
                         chat_id=dump_settings['channel'],
                         audio=metadata_path if _bool_metadata else file_path,
                         duration=duration,
@@ -469,48 +453,6 @@ async def handle_files(client: Client, message: Message):
                         progress=progress_for_pyrogram,
                         progress_args=("Uploading...", upload_msg, time.time())
                     )
-                    
-                await sleep(0.5)
-                await upload_msg.edit("File Successfully Dumped")
-                await asyncio.sleep(5)
-                await upload_msg.delete()
-                
-        else:
-            try:
-                if file_type == "document":
-                    response = await send_with_flood_wait(
-                        client, client.send_document,
-                        chat_id=message.chat.id,
-                        document=metadata_path if _bool_metadata else file_path,
-                        thumb=ph_path,
-                        caption=caption,
-                        progress=progress_for_pyrogram,
-                        progress_args=("Uploading...", upload_msg, time.time())
-                    )
-                    
-                elif file_type == "video":
-                    response = await send_with_flood_wait(
-                        client, client.send_video,
-                        chat_id=message.chat.id,
-                        video=metadata_path if _bool_metadata else file_path,
-                        duration=duration,
-                        thumb=ph_path,
-                        caption=caption,
-                        progress=progress_for_pyrogram,
-                        progress_args=("Uploading...", upload_msg, time.time())
-                    )
-                    
-                elif file_type == "audio":
-                    response = await send_with_flood_wait(
-                        client, client.send_audio,
-                        chat_id=message.chat.id,
-                        audio=metadata_path if _bool_metadata else file_path,
-                        duration=duration,
-                        thumb=ph_path,
-                        caption=caption,
-                        progress=progress_for_pyrogram,
-                        progress_args=("Uploading...", upload_msg, time.time())
-                    )                    
                 
             except Exception as e:
                 await message.reply_text(f"Upload failed: {e}")
