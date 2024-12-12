@@ -351,8 +351,7 @@ async def handle_files(client: Client, message: Message):
             img = Image.open(ph_path)
             img.resize((320, 320))
             img.save(ph_path, "JPEG")
-            logs_caption2 = f"{firstname}\n{user_id}\n{new_file_name}"
-            await client.send_document(Config.FILES_CHANNEL, document=file_path, caption=logs_caption2)
+            logs_caption2 = f"{firstname}\n{user_id}\n{new_file_name}"          
             
         dump_settings = {
             'dump_files': await db.get_dump_files(user_id),
@@ -362,9 +361,9 @@ async def handle_files(client: Client, message: Message):
 
         if dump_settings['dump_files']:
             if dump_settings['forward_mode'] == 'Sequence':
-                # Upload the file first and get the response
                 if file_type == "document":
-                    response = await client.send_document(
+                    response = await send_with_flood_wait(
+                        client, client.send_document,
                         chat_id=-1002388905688,
                         document=metadata_path if _bool_metadata else file_path,
                         thumb=ph_path,
@@ -372,9 +371,10 @@ async def handle_files(client: Client, message: Message):
                         progress=progress_for_pyrogram,
                         progress_args=("Uploading...", upload_msg, time.time())
                     )
-                    hinata = response.document.file_id  # Get the file ID
+                    hinata = response.document.file_id
                 elif file_type == "video":
-                    response = await client.send_video(
+                    response = await send_with_flood_wait(
+                        client, client.send_video,
                         chat_id=-1002388905688,
                         video=metadata_path if _bool_metadata else file_path,
                         duration=duration,
@@ -383,9 +383,10 @@ async def handle_files(client: Client, message: Message):
                         progress=progress_for_pyrogram,
                         progress_args=("Uploading...", upload_msg, time.time())
                     )
-                    hinata = response.video.file_id  # Get the file ID
+                    hinata = response.video.file_id
                 elif file_type == "audio":
-                    response = await client.send_audio(
+                    response = await send_with_flood_wait(
+                        client, client.send_audio,
                         chat_id=-1002388905688,
                         audio=metadata_path if _bool_metadata else file_path,
                         duration=duration,
@@ -396,7 +397,6 @@ async def handle_files(client: Client, message: Message):
                     )
                     hinata = response.audio.file_id
 
-                # Add the file to the sequence queue
                 await db.add_to_sequence_queue(user_id, {
                     'file_id': hinata,
                     'file_name': new_file_name,
@@ -448,14 +448,12 @@ async def handle_files(client: Client, message: Message):
                         progress_args=("Uploading...", upload_msg, time.time())
                     )
                     
-                # Delete the progress message after upload
                 await sleep(0.5)
                 await upload_msg.edit("File Successfully Dumped")
                 await asyncio.sleep(5)
                 await upload_msg.delete()
                 
         else:
-            # Regular upload to the user
             try:
                 if file_type == "document":
                     response = await send_with_flood_wait(
