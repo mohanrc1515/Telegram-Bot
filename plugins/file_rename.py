@@ -588,7 +588,7 @@ async def sequence_dump(client, message: Message):
     # Send start message if it's the first episode of a season
     first_item = queue[0]
     if first_item['season'] > 0:
-        start_msg = await user_db.get_start_message(user_id)
+        start_msg = await db.get_start_message(user_id)
         if start_msg:
             start_msg = start_msg.replace("{quality}", first_item['quality'])
             start_msg = start_msg.replace("{title}", extract_title(first_item['file_name']))
@@ -620,7 +620,7 @@ async def sequence_dump(client, message: Message):
     # Send end message if it's the last episode of a season
     last_item = queue[-1]
     if last_item['season'] > 0:
-        end_msg = await user_db.get_end_message(user_id)
+        end_msg = await db.get_end_message(user_id)
         if end_msg:
             end_msg = end_msg.replace("{quality}", last_item['quality'])
             end_msg = end_msg.replace("{title}", extract_title(last_item['file_name']))
