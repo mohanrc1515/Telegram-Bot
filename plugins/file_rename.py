@@ -212,7 +212,9 @@ async def handle_files(client: Client, message: Message):
         return
 
     if not format_template:
-        return await message.reply_text("Please Set An Auto Rename Format First Using /autorename")    
+        return await message.reply_text("Please Set An Auto Rename Format First Using /autorename")
+
+    await asyncio.sleep(0.5)
         
     file = message.document or message.video or message.audio
     if not file:
@@ -264,8 +266,12 @@ async def handle_files(client: Client, message: Message):
     
     # Initialize the file based on media type
     file = message.document or message.video or message.audio
-    download_msg = await message.reply_text("Your file has been added to the queue and will be processed soon.")
-   
+    if file:
+        # Reply with the specified message, ensuring the reply is quoted
+        download_msg = await message.reply_text(
+            "Your file has been added to the queue and will be processed soon.",
+            quote=True
+        )
     async def task():
         await asyncio.sleep(0.5)
         await safe_edit_message(download_msg, "Processing... ⚡")
