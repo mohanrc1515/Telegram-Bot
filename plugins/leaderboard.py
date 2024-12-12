@@ -1,38 +1,73 @@
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
-from helper.database import db
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from datetime import datetime, timedelta
+from pytz import timezone
 from helper.utils import user_mention
+import asyncio
+from helper.database import db
 
+# Command Leaderboard
 @Client.on_message(filters.command("leaderboard"))
 async def leaderboard_command(client, message):
-    top_users = await db.get_top_users_by_file_count(10)  # Get top 10 users by file count
     user_id = message.from_user.id
-    user_count = await db.get_file_count(user_id)  # Fetch total file count for the current user
-      
-    if not top_users:
-        await message.reply("No users have renamed files yet.")
-        return
+    user_count = await db.get_file_count(user_id)
+    await send_leaderboard(client, message.chat.id, include_user_count=True, user_count=user_count)
 
-    leaderboard_message = "🏆 **Our Top Renamers** 🏆\n\n"
-    for rank, user in enumerate(top_users, start=1):
-        user_id = user['_id']
-        file_count = user.get('file_count', 0)
-        
-        # Fetch user details to get the first name
-        user_details = await client.get_users(user_id)
-        first_name = user_details.first_name if user_details else "Unknown"
-        
-        user_mention = f"[{first_name}](tg://user?id={user_id})"  # Create mention link with first name
-        leaderboard_message += f"{rank}. {user_mention} - {file_count} files\n"
-    
-    # Add thank you message
-    leaderboard_message += f"\nYour File Count: {user_count}\n\nThanks for using the bot!"
+# Scheduled Leaderboard
+async def send_leaderboard(client, chat_id, include_user_count=False, user_count=None):
+    try:
+        top_users = await db.get_top_users_by_file_count(10)
+        leaderboard_message = "🏆 **Leaderboard: Top Renamers** 🏆\n\n"
 
-    support_button = InlineKeyboardButton("Support Group", url="https://t.me/Elites_Assistance")
-    keyboard = InlineKeyboardMarkup([[support_button]])
+        if not top_users:
+            leaderboard_message += "No users have renamed files yet.\n\n"
+        else:
+            for rank, user in enumerate(top_users, start=1):
+                user_id = user['_id']
+                file_count = user.get('file_count', 0)
 
-    await message.reply(leaderboard_message, reply_markup=keyboard)
-   
+                try:
+                    user_details = await client.get_users(user_id)
+                    first_name = user_details.first_name if user_details else "Unknown"
+                except Exception:
+                    first_name = "Unknown"
+
+                # Avoid notifying users by excluding the `tg://user?id` mention link
+                leaderboard_message += f"**{rank}.** {first_name} — **{file_count} files**\n"
+
+        if include_user_count:
+            leaderboard_message += f"\n✨ Your Total Files: **{user_count}**\n\n"
+
+        leaderboard_message += "Thank You All ! 🚀\n\n"
+
+        support_button = InlineKeyboardButton("Updates Channel", url="https://t.me/Elites_Bots")
+        keyboard = InlineKeyboardMarkup([[support_button]])
+
+        await client.send_message(chat_id, leaderboard_message, reply_markup=keyboard)
+
+    except Exception as e:
+        await client.send_message(chat_id, f"An error occurred while generating the leaderboard: {str(e)}")
+
+# Schedule Leaderboard at 23:59 daily
+async def schedule_leaderboard(client):
+    kolkata_tz = timezone("Asia/Kolkata")
+    while True:
+        now = datetime.now(kolkata_tz)
+        target_time = now.replace(hour=23, minute=59, second=0, microsecond=0)
+
+        if now > target_time:
+            target_time += timedelta(days=1)
+
+        await asyncio.sleep((target_time - now).total_seconds())
+        # Scheduled leaderboard for the main channel/group without user-specific data
+        await send_leaderboard(client, chat_id=-1001883100756, include_user_count=False)
+
+# Start the scheduler on bot startup
+@Client.on_start
+async def start_scheduler(client):
+    asyncio.create_task(schedule_leaderboard(client))
+
+
 @Client.on_message(filters.command("top_referrals"))
 async def top_referrals(client, message):
     try:
@@ -71,3 +106,4 @@ async def top_referrals(client, message):
     except Exception as e:
         print(f"Error: {e}")
         await message.reply("An error occurred while fetching the top referrers.")
+        
