@@ -197,3 +197,52 @@ async def set_dump_channel(client, message: Message):
         await message.reply_text(f"Dump Channel set to: {channel_id}")
     except (IndexError, ValueError):
         await message.reply_text("Please provide a valid channel ID.\n\nEg : <code>/dump -100123456789 </code>")
+
+
+@Client.on_message(filters.command("startdump") & filters.private)
+async def start_dump(client, message: Message):
+    user_id = message.from_user.id
+    await message.reply_text("Please send the start message for each season. You can use placeholders like {quality}, {title}, {firstepisode}.")
+    
+    # Wait for the user's input
+    response = await client.listen(message.chat.id)
+    
+    # Save start message to database
+    await user_db.set_start_message(user_id, response.text)
+
+    await message.reply_text(f"Start message set:\n{response.text}")
+
+@Client.on_message(filters.command("enddump") & filters.private)
+async def end_dump(client, message: Message):
+    user_id = message.from_user.id
+    await message.reply_text("Please send the end message for each season. You can use placeholders like {quality}, {title}, {firstepisode}, {lastepisode}.")
+    
+    # Wait for the user's input
+    response = await client.listen(message.chat.id)
+    
+    # Save end message to database
+    await user_db.set_end_message(user_id, response.text)
+
+    await message.reply_text(f"End message set:\n{response.text}")
+
+@Client.on_message(filters.command("dlt_startdump") & filters.private)
+async def delete_start_dump(client, message: Message):
+    user_id = message.from_user.id
+    await user_db.delete_start_message(user_id)
+    await message.reply_text("Start message deleted.")
+
+@Client.on_message(filters.command("dlt_enddump") & filters.private)
+async def delete_end_dump(client, message: Message):
+    user_id = message.from_user.id
+    await user_db.delete_end_message(user_id)
+    await message.reply_text("End message deleted.")
+
+@Client.on_message(filters.command("dumptext") & filters.private)
+async def show_dump_text(client, message: Message):
+    user_id = message.from_user.id
+    
+    # Get start and end messages from the database
+    start_message = await user_db.get_start_message(user_id) or "No start message set."
+    end_message = await user_db.get_end_message(user_id) or "No end message set."
+    
+    await message.reply_text(f"Start message:\n{start_message}\n\nEnd message:\n{end_message}")
