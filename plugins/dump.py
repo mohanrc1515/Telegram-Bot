@@ -208,7 +208,7 @@ async def start_dump(client, message: Message):
     response = await client.listen(message.chat.id)
     
     # Save start message to database
-    await user_db.set_start_message(user_id, response.text)
+    await db.set_start_message(user_id, response.text)
 
     await message.reply_text(f"Start message set:\n{response.text}")
 
@@ -221,20 +221,20 @@ async def end_dump(client, message: Message):
     response = await client.listen(message.chat.id)
     
     # Save end message to database
-    await user_db.set_end_message(user_id, response.text)
+    await db.set_end_message(user_id, response.text)
 
     await message.reply_text(f"End message set:\n{response.text}")
 
 @Client.on_message(filters.command("dlt_startdump") & filters.private)
 async def delete_start_dump(client, message: Message):
     user_id = message.from_user.id
-    await user_db.delete_start_message(user_id)
+    await db.delete_start_message(user_id)
     await message.reply_text("Start message deleted.")
 
 @Client.on_message(filters.command("dlt_enddump") & filters.private)
 async def delete_end_dump(client, message: Message):
     user_id = message.from_user.id
-    await user_db.delete_end_message(user_id)
+    await db.delete_end_message(user_id)
     await message.reply_text("End message deleted.")
 
 @Client.on_message(filters.command("dumptext") & filters.private)
@@ -242,7 +242,7 @@ async def show_dump_text(client, message: Message):
     user_id = message.from_user.id
     
     # Get start and end messages from the database
-    start_message = await user_db.get_start_message(user_id) or "No start message set."
-    end_message = await user_db.get_end_message(user_id) or "No end message set."
+    start_message = await db.get_start_message(user_id) or "No start message set."
+    end_message = await db.get_end_message(user_id) or "No end message set."
     
     await message.reply_text(f"Start message:\n{start_message}\n\nEnd message:\n{end_message}")
