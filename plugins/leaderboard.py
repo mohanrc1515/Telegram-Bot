@@ -62,11 +62,6 @@ async def schedule_leaderboard(client):
         # Scheduled leaderboard for the main channel/group without user-specific data
         await send_leaderboard(client, chat_id=-1001883100756, include_user_count=False)
 
-# Start the scheduler on bot startup
-@Client.on_ready
-async def start_scheduler(client):
-    asyncio.create_task(schedule_leaderboard(client))
-
 
 @Client.on_message(filters.command("top_referrals"))
 async def top_referrals(client, message):
