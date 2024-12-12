@@ -63,7 +63,7 @@ async def schedule_leaderboard(client):
         await send_leaderboard(client, chat_id=-1001883100756, include_user_count=False)
 
 # Start the scheduler on bot startup
-@Client.on_start
+@Client.on_ready
 async def start_scheduler(client):
     asyncio.create_task(schedule_leaderboard(client))
 
