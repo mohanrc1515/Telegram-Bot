@@ -369,6 +369,7 @@ async def handle_files(client: Client, message: Message):
             'channel': await db.get_dump_channel(user_id)
         }
 
+
         if dump_settings['dump_files']:
             if dump_settings['forward_mode'] == 'Sequence':
                 # Upload the file first and get the response
@@ -445,6 +446,47 @@ async def handle_files(client: Client, message: Message):
                     
                 elif file_type == "audio":
                     await client.send_audio(
+                        chat_id=dump_settings['channel'],
+                        audio=metadata_path if _bool_metadata else file_path,
+                        duration=duration,
+                        thumb=ph_path,
+                        caption=caption,
+                        progress=progress_for_pyrogram,
+                        progress_args=("Uploading...", upload_msg, time.time())
+                    )
+                    
+                # Delete the progress message after upload
+                await sleep(0.5)
+                await upload_msg.edit("File Successfully Dumped")
+                await asyncio.sleep(5)
+                await upload_msg.delete()
+                
+        else:
+            # Regular upload to the user
+            try:
+                if file_type == "document":
+                    await client.send_document(
+                        chat_id=message.chat.id,
+                        document=metadata_path if _bool_metadata else file_path,
+                        thumb=ph_path,
+                        caption=caption,
+                        progress=progress_for_pyrogram,
+                        progress_args=("Uploading...", upload_msg, time.time())
+                    )
+                    
+                elif file_type == "video":
+                    await client.send_video(
+                        chat_id=message.chat.id,
+                        video=metadata_path if _bool_metadata else file_path,
+                        duration=duration,
+                        thumb=ph_path,
+                        caption=caption,
+                        progress=progress_for_pyrogram,
+                        progress_args=("Uploading...", upload_msg, time.time())
+                    )
+                    
+                elif file_type == "audio":
+                    await client.send_audio(
                         chat_id=message.chat.id,
                         audio=metadata_path if _bool_metadata else file_path,
                         duration=duration,
@@ -465,8 +507,7 @@ async def handle_files(client: Client, message: Message):
                     os.remove(ph_path)
         # Remove the file_id from renaming_operations to allow further processing
         del renaming_operations[file_id]
-        #del user_files[user_id]
-        
+        #del user_files[user_id]        
     user_queue = get_user_queue(user_id)
     await user_queue.put(task)
     
