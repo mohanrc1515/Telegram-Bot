@@ -54,22 +54,6 @@ async def send_with_flood_wait(client, method, **kwargs):
                 
 last_edit_time = {}
 EDIT_COOLDOWN = 5
-
-async def safe_edit_message(message, text):
-    user_id = message.from_user.id
-    current_time = time.time()
-
-    # Check if enough time has passed since the last edit
-    if user_id not in last_edit_time or current_time - last_edit_time[user_id] >= EDIT_COOLDOWN:
-        try:
-            await message.edit(text)
-            last_edit_time[user_id] = current_time  # Update last edit time
-        except FloodWait as e:
-            print(f"Flood wait triggered: Waiting for {e.value} seconds")
-            await asyncio.sleep(e.value)
-            await safe_edit_message(message, text)
-    else:
-        print("Edit skipped to avoid flood wait.")
         
                 
 # Start sequencing command
@@ -157,6 +141,22 @@ async def handle_files(client: Client, message: Message):
     if not await db.is_user_authorized(user_id):
         await message.reply_text(Config.USER_REPLY)
         return
+
+    async def safe_edit_message(message, text):
+        user_id = message.from_user.id
+        current_time = time.time()
+
+        # Check if enough time has passed since the last edit
+        if user_id not in last_edit_time or current_time - last_edit_time[user_id] >= EDIT_COOLDOWN:
+            try:
+                await message.edit(text)
+                last_edit_time[user_id] = current_time  # Update last edit time
+            except FloodWait as e:
+                print(f"Flood wait triggered: Waiting for {e.value} seconds")
+                await asyncio.sleep(e.value)
+                await safe_edit_message(message, text)
+        else:
+            print("Edit skipped to avoid flood wait.")
         
     if user_id in thumbnail_extraction_mode and thumbnail_extraction_mode[user_id]:
         file = message.document or message.video or message.audio
