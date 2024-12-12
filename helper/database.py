@@ -355,8 +355,40 @@ class Database:
     async def get_referrer(self, user_id):
         referral = await self.referral_col.find_one({"_id": user_id})
         if referral:
-            return referral.get("referrer_id")  # Return referrer ID if found
-        return None  # Return None if no referrer data
+            return referral.get("referrer_id")
+        return None
+
+# Set start and end messages in the database
+    async def set_start_message(self, user_id, message_text):
+        await self.user_col.update_one(
+            {'_id': user_id},
+            {'$set': {'start_message': message_text}},
+            upsert=True
+        )
+
+    async def set_end_message(self, user_id, message_text):
+        await self.user_col.update_one(
+            {'_id': user_id},
+            {'$set': {'end_message': message_text}},
+            upsert=True
+        )
+
+    # Get start and end messages from the database
+    async def get_start_message(self, user_id):
+        user = await self.user_col.find_one({'_id': user_id})
+        return user.get('start_message', None)
+
+    async def get_end_message(self, user_id):
+        user = await self.user_col.find_one({'_id': user_id})
+        return user.get('end_message', None)
+
+    # Delete start and end messages
+    async def delete_start_message(self, user_id):
+        await self.user_col.update_one({'_id': user_id}, {'$unset': {'start_message': ""}})
+        
+    async def delete_end_message(self, user_id):
+        await self.user_col.update_one({'_id': user_id}, {'$unset': {'end_message': ""}})
+	    
 				  
     async def get_db_size(self):
         return (await self.db.command("dbstats"))['dataSize']
