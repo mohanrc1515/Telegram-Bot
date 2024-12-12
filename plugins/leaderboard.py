@@ -17,7 +17,7 @@ async def leaderboard_command(client, message):
 async def send_leaderboard(client, chat_id, include_user_count=False, user_count=None):
     try:
         top_users = await db.get_top_users_by_file_count(10)
-        leaderboard_message = "🏆 **Leaderboard: Top Renamers** 🏆\n\n"
+        leaderboard_message = "🏆 <u>**Our Top Renamers**</u> 🏆\n\n"
 
         if not top_users:
             leaderboard_message += "No users have renamed files yet.\n\n"
