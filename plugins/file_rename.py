@@ -32,22 +32,26 @@ def get_user_queue(user_id):
 # Function to get or create the semaphore for each user
 def get_user_semaphore(user_id):
     if user_id not in user_semaphores:
-        user_semaphores[user_id] = Semaphore(4)
+        user_semaphores[user_id] = Semaphore(5)
     return user_semaphores[user_id]
 
 async def process_task(user_id, task):
     semaphore = get_user_semaphore(user_id)
     async with semaphore:
         await task()
+        await asyncio.sleep(5)
+
+upload_semaphore = Semaphore(2)
 
 async def send_with_flood_wait(client, method, **kwargs):
     while True:
-        try:
-            return await method(**kwargs)
-        except FloodWait as e:
-            print(f"Flood wait triggered: Waiting for {e.value} seconds")
-            await asyncio.sleep(e.value)
-
+        async with upload_semaphore:
+            try:
+                return await method(**kwargs)
+            except FloodWait as e:
+                print(f"Flood wait triggered: Waiting for {e.value} seconds")
+                await asyncio.sleep(e.value)
+                
 # Start sequencing command
 @Client.on_message(filters.command("startsequence") & filters.private)
 async def start_sequence(client, message: Message):
