@@ -297,7 +297,7 @@ async def handle_files(client: Client, message: Message):
             print(f"Error getting duration: {e}")
             
         try:
-            upload_msg = await safe_edit_message(upload_msg, "Upload in progress... ⚡")
+            upload_msg = await safe_edit_message(download_msg, "Upload in progress... ⚡")
         except FloodWait as e:
             await asyncio.sleep(e.value)  # Wait dynamically if FloodWait error occurs
             upload_msg = await download_msg.edit("Trying To Upload...")  # Retry edit
