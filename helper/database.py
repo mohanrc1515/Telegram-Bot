@@ -413,23 +413,18 @@ class Database:
             {'_id': user_id},
             {'$unset': {'end_message': ""}}
 	)
-#  Get the user's dumptext trigger type
-    async def get_user_dumptext_trigger(self, user_id: int) -> str:
-        user_data = await self.user_col.find_one({'_id': user_id})
-        if not user_data:
-            return "season"  # Default value if the user data is not found
-        return user_data.get("dumptext_trigger", "season")  # Default to "season" if the field is missing
+    # User preference handling
+    async def get_user_preference(self, user_id):
+        user_data = await self.user_col.find_one({'_id': int(user_id)})
+        return user_data.get('message_mode', 'season')  # Default to 'season'
 
-# Set the user's dumptext trigger type
-    async def set_user_dumptext_trigger(self, user_id: int, trigger_type: str):
-        if trigger_type not in {"season", "quality"}:
-            raise ValueError("Invalid trigger type. Must be 'season' or 'quality'.")
-    
+    # Function to set user preference in DB
+    async def set_user_preference(self, user_id, mode):
         await self.user_col.update_one(
-            {"_id": user_id},  # Corrected from "user_id" to "_id"
-            {"$set": {"dumptext_trigger": trigger_type}},
-            upsert=True  # Create a document if it doesn't exist
-	)    
+            {'_id': int(user_id)},
+            {'$set': {'message_mode': mode}},
+            upsert=True
+        )"
                	    
 				  
     async def get_db_size(self):
