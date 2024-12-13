@@ -358,37 +358,61 @@ class Database:
             return referral.get("referrer_id")
         return None
 
-# Set start and end messages in the database
-    async def set_start_message(self, user_id, message_text):
+    # Save start message
+    async def set_start_message(self, user_id, text=None, image_id=None, sticker_id=None):
+        update_data = {'start_message': {}}
+        if text:
+            update_data['start_message']['text'] = text
+        if image_id:
+            update_data['start_message']['image_id'] = image_id
+        if sticker_id:
+            update_data['start_message']['sticker_id'] = sticker_id
+
         await self.user_col.update_one(
             {'_id': user_id},
-            {'$set': {'start_message': message_text}},
+            {'$set': update_data},
             upsert=True
         )
 
-    async def set_end_message(self, user_id, message_text):
+    # Save end message
+    async def set_end_message(self, user_id, text=None, image_id=None, sticker_id=None):
+        update_data = {'end_message': {}}
+        if text:
+            update_data['end_message']['text'] = text
+        if image_id:
+            update_data['end_message']['image_id'] = image_id
+        if sticker_id:
+            update_data['end_message']['sticker_id'] = sticker_id
+
         await self.user_col.update_one(
             {'_id': user_id},
-            {'$set': {'end_message': message_text}},
+            {'$set': update_data},
             upsert=True
         )
 
-    # Get start and end messages from the database
+    # Get start message
     async def get_start_message(self, user_id):
         user = await self.user_col.find_one({'_id': user_id})
         return user.get('start_message', None)
 
+    # Get end message
     async def get_end_message(self, user_id):
         user = await self.user_col.find_one({'_id': user_id})
         return user.get('end_message', None)
 
-    # Delete start and end messages
+    # Delete start message
     async def delete_start_message(self, user_id):
-        await self.user_col.update_one({'_id': user_id}, {'$unset': {'start_message': ""}})
-        
+        await self.user_col.update_one(
+            {'_id': user_id},
+            {'$unset': {'start_message': ""}}
+        )
+
+    # Delete end message
     async def delete_end_message(self, user_id):
-        await self.user_col.update_one({'_id': user_id}, {'$unset': {'end_message': ""}})
-	    
+        await self.user_col.update_one(
+            {'_id': user_id},
+            {'$unset': {'end_message': ""}}
+	)
 				  
     async def get_db_size(self):
         return (await self.db.command("dbstats"))['dataSize']
