@@ -10,6 +10,7 @@ CAPTION_SETUP_CALLBACK = "caption_setup"
 FILE_SEQUENCE_CALLBACK = "file_sequence"
 AUTHENTICATION_CALLBACK = "authentication"
 DUMP_CALLBACK = "dump"
+DUMP_MESSAGE_CALLBACK = "dump_message"
 
 # /features command to list all the bot features with a button UI
 @Client.on_message(filters.private & filters.command(["features"]))
@@ -42,7 +43,7 @@ async def features_command(client, message):
             ],
             [
                 InlineKeyboardButton("📤 Dump", callback_data="dump"),
-                InlineKeyboardButton("💬 Support", url="https://t.me/elites_assistance")
+                InlineKeyboardButton("📬 Dump Text", callback_data="dump_message")
             ],
             [        
                 InlineKeyboardButton("🔄 Back to Menu", callback_data="commands"),
@@ -79,7 +80,7 @@ async def features_callback(client, query: CallbackQuery):
             ],
             [
                 InlineKeyboardButton("📤 Dump", callback_data="dump"),
-                InlineKeyboardButton("💬 Support", url="https://t.me/elites_assistance")
+                InlineKeyboardButton("📬 Dump Text", callback_data="dump_message")
             ],
             [        
                 InlineKeyboardButton("🔄 Back to Menu", callback_data="commands"),
@@ -110,6 +111,7 @@ async def feature_callback(client, query: CallbackQuery):
         FILE_SEQUENCE_CALLBACK: Txt.SEQUENCE_TXT,
         AUTHENTICATION_CALLBACK: Txt.REFER_TXT,
         DUMP_CALLBACK: Txt.DUMP_TXT,
+        DUMB_MESSAGE_CALLBACK: Txt.DUMPMESSAGE_TXT,
     }
     
     # Get the text for the selected feature
