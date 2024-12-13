@@ -202,30 +202,28 @@ async def set_dump_channel(client, message: Message):
 @Client.on_message(filters.command("startdump") & filters.private)
 async def start_dump(client, message: Message):
     user_id = message.from_user.id
-    await message.reply_text(
-        "Dear user, please reply to the **text**, **image**, or **sticker** "
-        "you want to set as the start message for dumping. Use the placeholders:\n\n"
-        "- **{quality}**: Content quality (e.g., 1080p)\n"
-        "- **{title}**: Series title\n"
-        "- **{season}**: Season number\n"
-        "- **{firstepisode}**: First episode\n"
-        "- **{lastepisode}**: Last episode"
-    )
-
-@Client.on_message(filters.reply & filters.private)
-async def set_start_message(client, message: Message):
-    user_id = message.from_user.id
-
+    replied = message.reply_to_message
+    if not replied:
+        await message.reply_text(
+            "Dear user, please reply to the **text**, **image**, or **sticker** "
+            "you want to set as the start message for dumping. Use the placeholders:\n\n"
+            "- **{quality}**: Content quality (e.g., 1080p)\n"
+            "- **{title}**: Series title\n"
+            "- **{season}**: Season number\n"
+            "- **{firstepisode}**: First episode\n"
+            "- **{lastepisode}**: Last episode"
+        )
+        return
     # Check if the replied message is a sticker, image, or text
-    if message.sticker:
-        await db.set_start_message(user_id, sticker_id=message.sticker.file_id, text=message.caption or "")
+    if replied.sticker:
+        await db.set_start_message(user_id, sticker_id=replied.sticker.file_id, text=replied.sticker.caption or "")
         await message.reply_text("Start message set with a sticker.")
-    elif message.photo:
-        await db.set_start_message(user_id, image_id=message.photo.file_id, text=message.caption or "")
+    elif replied.photo:
+        await db.set_start_message(user_id, image_id=replied.photo.file_id, text=replied.photo.caption or "")
         await message.reply_text("Start message set with an image.")
-    elif message.text:
-        await db.set_start_message(user_id, text=message.text)
-        await message.reply_text(f"Start message set:\n{message.text}")
+    elif replied.text:
+        await db.set_start_message(user_id, text=replied.text)
+        await message.reply_text(f"Start message set:\n{replied.text}")
     else:
         await message.reply_text("Invalid format. Please reply to a text, image, or sticker.")
 
