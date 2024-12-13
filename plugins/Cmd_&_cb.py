@@ -157,7 +157,7 @@ async def customdumptext_cmd(client, message):
         text=Txt.DUMPMESSAGE_TXT,
         disable_web_page_preview=True,
         reply_markup=InlineKeyboardMarkup([[
-            InlineKeyboardButton("Cᴏɴғɪɢᴜʀᴇ Bᴏᴛ Sᴇᴛᴛɪɴɢꜱ", callback_data='settings')
+            InlineKeyboardButton("Cᴏɴғɪɢᴜʀᴇ Dᴜᴍᴘ Sᴇᴛᴛɪɴɢꜱ", callback_data='dump_settings')
         ],[
             InlineKeyboardButton('Cʟᴏꜱᴇ', callback_data='close'),
         ]])
