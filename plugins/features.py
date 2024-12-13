@@ -113,7 +113,7 @@ async def feature_callback(client, query: CallbackQuery):
         FILE_SEQUENCE_CALLBACK: Txt.SEQUENCE_TXT,
         AUTHENTICATION_CALLBACK: Txt.REFER_TXT,
         DUMP_CALLBACK: Txt.DUMP_TXT,
-        DUMB_MESSAGE_CALLBACK: Txt.DUMPMESSAGE_TXT,
+        DUMP_MESSAGE_CALLBACK: Txt.DUMPMESSAGE_TXT,
     }
     
     # Get the text for the selected feature
