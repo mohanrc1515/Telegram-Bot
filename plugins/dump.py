@@ -222,9 +222,7 @@ async def start_dump(client, message: Message):
             await db.set_start_message(user_id, sticker_id=replied.sticker.file_id, text=caption)
             await message.reply_text("Start message set with a sticker.")
         elif replied.photo:
-            # Photos may or may not have a caption
-            caption = replied.photo.caption if replied.photo.caption else ""  # Use caption if it exists
-            await db.set_start_message(user_id, image_id=replied.photo.file_id, text=caption)
+            await db.set_start_message(user_id, image_id=replied.photo.file_id, text=replied.caption or "")
             await message.reply_text("Start message set with an image.")
         elif replied.text:
             await db.set_start_message(user_id, text=replied.text)
@@ -292,7 +290,7 @@ async def show_dump_text(client, message: Message):
         f"📜 **Text:** {start_message.get('text', 'N/A')}\n"
         f"🖼️ **Sticker:** {'✅ Yes' if start_message.get('sticker_id') else '❌ No'}\n"
         f"📷 **Image:** {'✅ Yes' if start_message.get('image_id') else '❌ No'}\n\n"
-        f"**🌟 <u>End Message</u>:**\n\n"
+        f"**✨ <u>End Message</u>:**\n\n"
         f"📜 **Text:** {end_message.get('text', 'N/A')}\n"
         f"🖼️ **Sticker:** {'✅ Yes' if end_message.get('sticker_id') else '❌ No'}\n"
         f"📷 **Image:** {'✅ Yes' if end_message.get('image_id') else '❌ No'}"
