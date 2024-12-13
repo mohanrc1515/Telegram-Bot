@@ -199,4 +199,38 @@ Get Premium: Enhance your file renaming capabilities and enjoy the full potentia
 - Authorization Duration: 1 Month
 """
 
- 
+
+    DUMPMESSAGE_TXT = """
+**📂 Dump Messages Guide:**
+
+1. **/startdump**  
+   - Set the **start message** for each season or quality. You can send a text, image (with or without caption), or a sticker.  
+   - Use placeholders for dynamic content:  
+     - **{quality}**: The quality of the content (e.g., 1080p)  
+     - **{title}**: The title of the series  
+     - **{season}**: The season number  
+     - **{firstepisode}**: The first episode number  
+     - **{lastepisode}**: The last episode number  
+   - Example Format:  
+     `✧ Season {season} : [{firstepisode} - {lastepisode}]  
+     ✧ {quality} [English + Japanese]`
+
+2. **/enddump**  
+   - Set the **end message** for each season or quality, similar to the `/startdump` command.  
+   - You can use text, images, or stickers.  
+   - Use the same placeholders for dynamic content as in `/startdump`.
+
+3. **/dlt_startdump** : Delete the dump start message.
+
+4. **/dlt_enddump** : Delete the dump end message.
+
+5. **/dumptext** : Check your current text for dump message or weather you've added pic, sticker or not...
+
+6. **/dumptextmode**  
+   - Select your preferred display mode for the messages:  
+     - **Season**  
+     - **Quality**  
+     - **Both**  
+   This diecides weather you want dump message after quality changes or season or both. Use it youllunderstand what I meant...
+"""
+    
