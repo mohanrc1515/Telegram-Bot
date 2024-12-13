@@ -215,20 +215,25 @@ async def start_dump(client, message: Message):
         )
         return
 
-    # Check if the replied message is a sticker, image, or text
-    if replied.sticker:
-        caption = replied.text if replied.text else ""  # Use message text as caption for stickers
-        await db.set_start_message(user_id, sticker_id=replied.sticker.file_id, text=caption)
-        await message.reply_text("Start message set with a sticker.")
-    elif replied.photo:
-        caption = replied.photo.caption if replied.photo.caption else ""  # Handle photo caption
-        await db.set_start_message(user_id, image_id=replied.photo.file_id, text=caption)
-        await message.reply_text("Start message set with an image.")
-    elif replied.text:
-        await db.set_start_message(user_id, text=replied.text)
-        await message.reply_text(f"Start message set:\n{replied.text}")
-    else:
-        await message.reply_text("Invalid format. Please reply to a text, image, or sticker.")
+    try:
+        # Check if the replied message is a sticker, image, or text
+        if replied.sticker:
+            caption = replied.text if replied.text else ""  # Stickers have no caption, use text if available
+            await db.set_start_message(user_id, sticker_id=replied.sticker.file_id, text=caption)
+            await message.reply_text("Start message set with a sticker.")
+        elif replied.photo:
+            # Photos may or may not have a caption
+            caption = replied.photo.caption if replied.photo.caption else ""  # Use caption if it exists
+            await db.set_start_message(user_id, image_id=replied.photo.file_id, text=caption)
+            await message.reply_text("Start message set with an image.")
+        elif replied.text:
+            await db.set_start_message(user_id, text=replied.text)
+            await message.reply_text(f"Start message set:\n{replied.text}")
+        else:
+            await message.reply_text("Invalid format. Please reply to a text, image, or sticker.")
+    except Exception as e:
+        await message.reply_text(f"An error occurred while setting the start message: {e}")
+
 
 @Client.on_message(filters.command("enddump") & filters.private)
 async def end_dump(client, message: Message):
