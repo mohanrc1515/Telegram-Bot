@@ -58,8 +58,32 @@ async def send_file_with_retry(send_method, dump_channel, item):
         await asyncio.sleep(e.value)
         await send_file_with_retry(send_method, dump_channel, item)
 
+
+async def handle_dump_text_trigger(client, dump_channel, current_item, previous_item, user_id):
+    """
+    Handles sending the dump text when the trigger (season or quality) changes.
+    """
+    # Get user's selected trigger type
+    trigger_type = await db.get_user_dumptext_trigger(user_id)
+
+    # Determine if a change occurred
+    trigger_changed = False
+    if trigger_type == "season" and current_item['season'] != previous_item['season']:
+        trigger_changed = True
+    elif trigger_type == "quality" and current_item['quality'] != previous_item['quality']:
+        trigger_changed = True
+
+    if trigger_changed:
+        # Fetch and send the dump text
+        dump_text = await db.get_user_dump_text(user_id)
+        if dump_text:
+            await client.send_message(dump_channel, dump_text)
+
+
 async def send_custom_message(client, dump_channel, message_data, current_item, first_item=None, last_item=None):
-    # Replace placeholders in the message text
+    """
+    Sends a custom message based on placeholders in the text.
+    """
     message_text = message_data.get('text', '').replace("{quality}", current_item['quality'])
     message_text = message_text.replace("{title}", extract_title(current_item['file_name']))
     message_text = message_text.replace("{season}", str(current_item.get('season', '')))
@@ -69,11 +93,9 @@ async def send_custom_message(client, dump_channel, message_data, current_item, 
     if last_item:
         message_text = message_text.replace("{lastepisode}", str(last_item.get('episode', '')))
 
-    # Retrieve optional sticker or image IDs
     sticker_id = message_data.get('sticker_id')
     image_id = message_data.get('image_id')
 
-    # Send the appropriate type of message
     try:
         if sticker_id:
             await client.send_sticker(dump_channel, sticker_id)
@@ -604,23 +626,14 @@ async def sequence_dump(client, message: Message):
     }
 
     failed_files = []
-    previous_season = None
+    previous_item = None
 
     for index, item in enumerate(queue):
-        current_season = item['season']
         send_method = send_methods.get(item['file_type'])
 
-        # Send end message for the previous season if the season changes
-        if previous_season is not None and previous_season != current_season:
-            end_msg = await db.get_end_message(user_id)
-            if end_msg:
-                await send_custom_message(client, dump_channel, end_msg, item, queue[0], queue[index - 1])
-
-        # Send start message for the new season
-        if previous_season is None or previous_season != current_season:
-            start_msg = await db.get_start_message(user_id)
-            if start_msg:
-                await send_custom_message(client, dump_channel, start_msg, item, queue[0])
+        # Handle dump text trigger (based on season or quality change)
+        if previous_item:
+            await handle_dump_text_trigger(client, dump_channel, item, previous_item, user_id)
 
         # Send the file
         if not send_method:
@@ -632,10 +645,10 @@ async def sequence_dump(client, message: Message):
         except Exception as e:
             failed_files.append(f"Failed to send file: {item['file_name']} (Error: {e})")
 
-        previous_season = current_season
+        previous_item = item
 
     # Send final end message if needed
-    if previous_season is not None:
+    if queue:
         end_msg = await db.get_end_message(user_id)
         if end_msg:
             await send_custom_message(client, dump_channel, end_msg, queue[-1], queue[0], queue[-1])
