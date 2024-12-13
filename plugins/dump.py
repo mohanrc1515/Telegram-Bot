@@ -204,10 +204,17 @@ async def start_dump(client, message: Message):
     user_id = message.from_user.id
     await message.reply_text(
         "Please send the **start message** for each season. "
-        "You can send text, an image (with or without caption), or a sticker. "
-        "Placeholders like {quality}, {title}, {season} and {firstepisode} can be used."
+        "You have the flexibility to send the message as plain text, an image (with or without a caption), or a sticker. "
+        "You can also make use of the following placeholders to dynamically modify the message:\n\n"
+        "- **{quality}**: The quality of the content (e.g., 1080p)\n"
+        "- **{title}**: The title of the series\n"
+        "- **{season}**: The season number\n"
+        "- **{firstepisode}**: The first episode number\n"
+        "- **{lastepisode}**: The last episode number\n\n"
+        "**Example Format**:\n"
+        "✧ Season {season} : [{firstepisode} - {lastepisode}]\n"
+        "✧ {quality} [English + Japanese]"
     )
-
     response = await client.listen(message.chat.id)
 
     # Determine if the response is a sticker, image, or text
@@ -227,9 +234,17 @@ async def start_dump(client, message: Message):
 async def end_dump(client, message: Message):
     user_id = message.from_user.id
     await message.reply_text(
-        "Please send the **end message** for each season. "
-        "You can send text, an image (with or without caption), or a sticker. "
-        "Placeholders like {quality}, {title}, {firstepisode}, {season} and {lastepisode} can be used."
+        "Please send the **start message** for each season. "
+        "You have the flexibility to send the message as plain text, an image (with or without a caption), or a sticker. "
+        "You can also make use of the following placeholders to dynamically modify the message:\n\n"
+        "- **{quality}**: The quality of the content (e.g., 1080p)\n"
+        "- **{title}**: The title of the series\n"
+        "- **{season}**: The season number\n"
+        "- **{firstepisode}**: The first episode number\n"
+        "- **{lastepisode}**: The last episode number\n\n"
+        "**Example Format**:\n"
+        "✧ Season {season} : [{firstepisode} - {lastepisode}]\n"
+        "✧ {quality} [English + Japanese]"
     )
 
     response = await client.listen(message.chat.id)
@@ -268,11 +283,11 @@ async def show_dump_text(client, message: Message):
     end_message = await db.get_end_message(user_id) or {"text": "No end message set."}
 
     response_text = (
-        f"**✨ Start Message:**\n\n"
+        f"**✨ <u>Start Message:</u>**\n\n"
         f"📜 **Text:** {start_message.get('text', 'N/A')}\n"
         f"🖼️ **Sticker:** {'✅ Yes' if start_message.get('sticker_id') else '❌ No'}\n"
         f"📷 **Image:** {'✅ Yes' if start_message.get('image_id') else '❌ No'}\n\n"
-        f"**🌟 End Message:**\n\n"
+        f"**🌟 <u>End Message</u>:**\n\n"
         f"📜 **Text:** {end_message.get('text', 'N/A')}\n"
         f"🖼️ **Sticker:** {'✅ Yes' if end_message.get('sticker_id') else '❌ No'}\n"
         f"📷 **Image:** {'✅ Yes' if end_message.get('image_id') else '❌ No'}"
