@@ -539,12 +539,13 @@ async def sequence_dump(client, message: Message):
 
     # Sorting by season, episode, volume, chapter, then quality
     queue.sort(key=lambda x: (
-        x['season'], 
-        x['episode'], 
-        x['volume'], 
-        x['chapter'], 
-        quality_priority.get(x['quality'], float('inf'))
-    ))
+            quality_priority.get(x['quality'], float('inf')),  # Quality is prioritized first
+            x['season'], 
+            x['episode'], 
+            x['volume'], 
+            x['chapter']
+        ))
+
 
     dump_channel = await db.get_dump_channel(user_id)
     if not dump_channel:
