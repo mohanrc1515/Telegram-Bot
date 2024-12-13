@@ -539,13 +539,12 @@ async def sequence_dump(client, message: Message):
 
     # Sorting by season, episode, volume, chapter, then quality
     queue.sort(key=lambda x: (
-            quality_priority.get(x['quality'], float('inf')),  # Quality is prioritized first
-            x['season'], 
-            x['episode'], 
-            x['volume'], 
-            x['chapter']
-        ))
-
+        quality_priority.get(x['quality'], float('inf')),  # Quality is prioritized first
+        x['season'], 
+        x['episode'], 
+        x['volume'], 
+        x['chapter']
+    ))
 
     dump_channel = await db.get_dump_channel(user_id)
     if not dump_channel:
@@ -556,9 +555,12 @@ async def sequence_dump(client, message: Message):
     if first_item['season'] > 0:
         start_msg = await db.get_start_message(user_id)
         if start_msg:
+            if isinstance(start_msg, dict):
+                start_msg = start_msg.get('text', '')
             start_msg = start_msg.replace("{quality}", first_item['quality'])
             start_msg = start_msg.replace("{title}", extract_title(first_item['file_name']))
-            start_msg = start_msg.replace("{firstepisode}", str(first_item['episode']))
+            start_msg = end_msg.replace("{firstepisode}", str(first_item['episode']))
+            start_msg = end_msg.replace("{lastepisode}", str(last_item['episode']))
             await client.send_message(dump_channel, start_msg)
 
     status_message = await message.reply_text("Starting to send files in sequence to channel...")
@@ -588,10 +590,10 @@ async def sequence_dump(client, message: Message):
     if last_item['season'] > 0:
         end_msg = await db.get_end_message(user_id)
         if end_msg:
+            if isinstance(end_msg, dict):
+                end_msg = end_msg.get('text', '')
             end_msg = end_msg.replace("{quality}", last_item['quality'])
             end_msg = end_msg.replace("{title}", extract_title(last_item['file_name']))
-            end_msg = end_msg.replace("{firstepisode}", str(first_item['episode']))
-            end_msg = end_msg.replace("{lastepisode}", str(last_item['episode']))
             await client.send_message(dump_channel, end_msg)
 
     sequence_notified[user_id] = False
@@ -614,6 +616,7 @@ async def send_file_with_retry(send_method, dump_channel, item):
         print(f"Flood wait of {e.value} seconds for file {item['file_name']}")
         await asyncio.sleep(e.value)
         await send_file_with_retry(send_method, dump_channel, item)
+
         
 
 @Client.on_message(filters.command("cleardump") & filters.private)
