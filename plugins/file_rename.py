@@ -605,22 +605,42 @@ async def sequence_dump(client, message: Message):
 
     failed_files = []
     previous_season = None
+    previous_quality = None
+
+    # Get user preference (season or quality) from the DB
+    message_type = await db.get_user_preference(user_id)  # Retrieve from DB
 
     for index, item in enumerate(queue):
         current_season = item['season']
+        current_quality = item['quality']
         send_method = send_methods.get(item['file_type'])
 
-        # Send end message for the previous season if the season changes
-        if previous_season is not None and previous_season != current_season:
-            end_msg = await db.get_end_message(user_id)
-            if end_msg:
-                await send_custom_message(client, dump_channel, end_msg, item, queue[0], queue[index - 1])
+        # Handle season or quality changes based on user preference
+        if message_type == 'season':
+            if previous_season is not None and previous_season != current_season:
+                end_msg = await db.get_end_message(user_id)
+                if end_msg:
+                    await send_custom_message(client, dump_channel, end_msg, item, queue[0], queue[index - 1])
 
-        # Send start message for the new season
-        if previous_season is None or previous_season != current_season:
-            start_msg = await db.get_start_message(user_id)
-            if start_msg:
-                await send_custom_message(client, dump_channel, start_msg, item, queue[0])
+            if previous_season is None or previous_season != current_season:
+                start_msg = await db.get_start_message(user_id)
+                if start_msg:
+                    await send_custom_message(client, dump_channel, start_msg, item, queue[0])
+
+            previous_season = current_season
+
+        elif message_type == 'quality':
+            if previous_quality is not None and previous_quality != current_quality:
+                end_msg = await db.get_end_message(user_id)
+                if end_msg:
+                    await send_custom_message(client, dump_channel, end_msg, item, queue[0], queue[index - 1])
+
+            if previous_quality is None or previous_quality != current_quality:
+                start_msg = await db.get_start_message(user_id)
+                if start_msg:
+                    await send_custom_message(client, dump_channel, start_msg, item, queue[0])
+
+            previous_quality = current_quality
 
         # Send the file
         if not send_method:
@@ -632,10 +652,8 @@ async def sequence_dump(client, message: Message):
         except Exception as e:
             failed_files.append(f"Failed to send file: {item['file_name']} (Error: {e})")
 
-        previous_season = current_season
-
     # Send final end message if needed
-    if previous_season is not None:
+    if previous_season is not None or previous_quality is not None:
         end_msg = await db.get_end_message(user_id)
         if end_msg:
             await send_custom_message(client, dump_channel, end_msg, queue[-1], queue[0], queue[-1])
@@ -648,7 +666,6 @@ async def sequence_dump(client, message: Message):
         await message.reply_text(f"Files sent, but some failed:\n" + "\n".join(failed_files))
     else:
         await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
-
 
 @Client.on_message(filters.command("cleardump") & filters.private)
 async def clear_sequence_dump(client, message: Message):
