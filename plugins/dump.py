@@ -259,7 +259,7 @@ async def delete_end_dump(client, message: Message):
     await db.delete_end_message(user_id)
     await message.reply_text("End message deleted.")
 
-@Client.on_message(filters.command("dumptext") & filters.private)
+@Client.on_message(filters.command("dumptext"))
 async def show_dump_text(client, message: Message):
     user_id = message.from_user.id
 
@@ -281,7 +281,7 @@ async def show_dump_text(client, message: Message):
     await message.reply_text(response_text)
 
 
-@Client.on_message(filters.command("dumptextmode") & filters.private)
+@Client.on_message(filters.command("dumptextmode"))
 async def dumptextmode(client, message: Message):
     user_id = message.from_user.id
 
