@@ -43,8 +43,8 @@ async def auto_rename_command(client, message):
             "• {quality} - for video resolution\n"
             "• {volume} - for manga volume number\n"
             "• {chapter} - for manga chapter number\n\n"
-            "<b>Example 1:</b> <code>/autorename S{season} E{episode} {title} [{quality}] [{audio}] @Anime_Elites</code>\n\n"
-            "<b>Example 2:</b> <code>/autorename Vol{volume} Ch{chapter} {title} @Manga_Elites</code>\n\n"
+            "<b>Example 1:</b> <code>/autorename S{season} E{episode} - {title} [{audio}] [{quality}] @Anime_Elites</code>\n\n"
+            "<b>Example 2:</b> <code>/autorename Vol{volume} Ch{chapter} - {title} @Manga_Elites</code>\n\n"
             f"<b>Your current format:</b> <code>{format_template}</code>"
         )
 
