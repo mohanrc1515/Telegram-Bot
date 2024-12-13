@@ -59,24 +59,30 @@ async def send_file_with_retry(send_method, dump_channel, item):
         await send_file_with_retry(send_method, dump_channel, item)
 
 async def send_custom_message(client, dump_channel, message_data, current_item, first_item=None, last_item=None):
-    # Replace placeholders in the message
+    # Replace placeholders in the message text
     message_text = message_data.get('text', '').replace("{quality}", current_item['quality'])
     message_text = message_text.replace("{title}", extract_title(current_item['file_name']))
+    message_text = message_text.replace("{season}", str(current_item.get('season', '')))
+    
     if first_item:
-        message_text = message_text.replace("{firstepisode}", str(first_item['episode']))
+        message_text = message_text.replace("{firstepisode}", str(first_item.get('episode', '')))
     if last_item:
-        message_text = message_text.replace("{lastepisode}", str(last_item['episode']))
+        message_text = message_text.replace("{lastepisode}", str(last_item.get('episode', '')))
 
     # Retrieve optional sticker or image IDs
     sticker_id = message_data.get('sticker_id')
     image_id = message_data.get('image_id')
 
-    if sticker_id:
-        await client.send_sticker(dump_channel, sticker_id)
-    elif image_id:
-        await client.send_photo(dump_channel, image_id, caption=message_text)
-    else:
-        await client.send_message(dump_channel, message_text)
+    # Send the appropriate type of message
+    try:
+        if sticker_id:
+            await client.send_sticker(dump_channel, sticker_id)
+        elif image_id:
+            await client.send_photo(dump_channel, image_id, caption=message_text)
+        else:
+            await client.send_message(dump_channel, message_text)
+    except Exception as e:
+        print(f"Failed to send message: {e}")
 
 # Start sequencing command
 @Client.on_message(filters.command("startsequence") & filters.private)
