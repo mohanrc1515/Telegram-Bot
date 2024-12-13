@@ -639,7 +639,7 @@ async def send_custom_message(client, dump_channel, message_data, current_item, 
         # If FloodWait occurs, wait for the specified time and retry
         print(f"Flood wait of {e.value} seconds for file {item['file_name']}")
         await asyncio.sleep(e.value)
-        await send_file_with_retry(send_method, dump_channel, item)       
+        await send_file_with_retry(send_method, dump_channel, item)
 
 @Client.on_message(filters.command("cleardump") & filters.private)
 async def clear_sequence_dump(client, message: Message):
