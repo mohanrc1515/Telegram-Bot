@@ -279,3 +279,51 @@ async def show_dump_text(client, message: Message):
     )
 
     await message.reply_text(response_text)
+
+
+@Client.on_message(filters.command("dumptextset") & filters.private)
+async def dump_text_set(client, message: Message):
+    user_id = message.from_user.id
+    # Get the current trigger from the database to display the selected one
+    current_trigger = await db.get_user_dumptext_trigger(user_id)
+    
+    # Define buttons with a check mark (✅) if the option is selected
+    buttons = [
+        [InlineKeyboardButton(
+            "Season ✅" if current_trigger == "season" else "Season", callback_data="set_dumptext_season")],
+        [InlineKeyboardButton(
+            "Quality ✅" if current_trigger == "quality" else "Quality", callback_data="set_dumptext_quality")]
+    ]
+    
+    # Prompt user to select the trigger type
+    reply_markup = InlineKeyboardMarkup(buttons)
+    await message.reply_text(
+        "Please select the trigger for the dump text:",
+        reply_markup=reply_markup
+    )
+
+
+@Client.on_callback_query(filters.regex(r"set_dumptext_(season|quality)"))
+async def set_dumptext_trigger(client, callback_query: CallbackQuery):
+    user_id = callback_query.from_user.id
+    trigger_type = callback_query.data.split("_")[-1]  # Extract season or quality
+    
+    # Save user's choice in the database
+    await db.set_user_dumptext_trigger(user_id, trigger_type)
+    
+    # Edit the message to reflect the updated choice with ✅ on the selected option
+    current_trigger = await db.get_user_dumptext_trigger(user_id)
+    
+    buttons = [
+        [InlineKeyboardButton(
+            "Season ✅" if current_trigger == "season" else "Season", callback_data="set_dumptext_season")],
+        [InlineKeyboardButton(
+            "Quality ✅" if current_trigger == "quality" else "Quality", callback_data="set_dumptext_quality")]
+    ]
+    
+    await callback_query.answer(f"Dump text will now trigger on {trigger_type.capitalize()} change.")
+    await callback_query.message.edit_text(
+        f"Dump text trigger set to **{trigger_type.capitalize()}**.",
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+
