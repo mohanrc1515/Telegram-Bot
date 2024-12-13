@@ -52,9 +52,9 @@ Use These Keywords To Setup Custom File Name
 ➝ volume :- to replace manga volume number
 ➝ chapter :- to replace manga chapter number
     
-‣ <b>Example :</b> <code>/autorename S{season} - E{episode} {title} [{quality}] [{audio}] @Anime_Elites</code>
+‣ <b>Example :</b> <code>/autorename S{season} E{episode} - {title} [{audio}] [{quality}] @Anime_Elites</code>
     
-‣ <b>Example 2:</b> <code>/autorename Vol{volume} - Ch{chapter} {title} @Manga_Elites</code> """
+‣ <b>Example 2:</b> <code>/autorename Vol{volume} Ch{chapter} - {title} @Manga_Elites</code> """
    
     
     THUMB_TXT = """ **<u>ᴛᴏ ꜱᴇᴛ ᴄᴜꜱᴛᴏᴍ ᴛʜᴜᴍʙɴᴀɪʟ</u>**
