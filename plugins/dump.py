@@ -327,3 +327,33 @@ async def set_dumptext_trigger(client, callback_query: CallbackQuery):
         reply_markup=InlineKeyboardMarkup(buttons)
     )
 
+Client.on_message(filters.command("switch") & filters.private)
+async def switch_message_type(client, message: Message):
+    user_id = message.from_user.id
+
+    # Retrieve current user preference from the database
+    current_preference = await db.get_user_preference(user_id)  # Assume 'db' handles DB operations
+
+    # Determine the new preference and the text for the buttons
+    if current_preference == 'season':
+        new_preference = 'quality'
+        button_season = InlineKeyboardButton(f"Season", callback_data="season")
+        button_quality = InlineKeyboardButton(f"Quality ✅", callback_data="quality")
+    else:
+        new_preference = 'season'
+        button_season = InlineKeyboardButton(f"Season ✅", callback_data="season")
+        button_quality = InlineKeyboardButton(f"Quality", callback_data="quality")
+
+    # Create the buttons and send a message with them
+    buttons = InlineKeyboardMarkup([[button_season, button_quality]])
+
+    # Update user preference in the database
+    await db.set_user_preference(user_id, new_preference)
+
+    # Notify the user and show the buttons
+    await message.reply_text(
+        f"Switched to {new_preference} mode. You can now choose the mode below:",
+        reply_markup=buttons
+    )
+
+
