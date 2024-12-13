@@ -217,13 +217,13 @@ Get Premium: Enhance your file renaming capabilities and enjoy the full potentia
    - Same as `/startdump` but for the **end message**.
 
 3. **/dlt_startdump**  
-   - Delete the start message.  
+   - Delete the dump start message.  
 
 4. **/dlt_enddump**  
-   - Delete the end message.  
+   - Delete the dump end message.  
 
 5. **/showdumptext**  
-   - View your current dump messages.  
+   - View your current dump messages status.  
 
 6. **/dumptextmode**  
    - Set when to show messages: **Season**, **Quality**, or **Both**.
