@@ -327,7 +327,7 @@ async def set_dumptext_trigger(client, callback_query: CallbackQuery):
         reply_markup=InlineKeyboardMarkup(buttons)
     )
 
-Client.on_message(filters.command("switch") & filters.private)
+@Client.on_message(filters.command("switch") & filters.private)
 async def switch_message_type(client, message: Message):
     user_id = message.from_user.id
 
