@@ -237,8 +237,12 @@ async def handle_files(client: Client, message: Message):
     
     # Initialize the file based on media type
     file = message.document or message.video or message.audio
-    download_msg = await message.reply_text("Your file has been added to the queue and will be processed soon.")
-    await asyncio.sleep(1)
+    if file:
+        # Reply with the specified message, ensuring the reply is quoted
+        download_msg = await message.reply_text(
+            "Your file has been added to the queue and will be processed soon.",
+            quote=True
+        )
    
     async def task():
         await asyncio.sleep(1)  # Prevent excessive rate limiting
