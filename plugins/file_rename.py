@@ -36,7 +36,7 @@ def get_user_queue(user_id):
 # Function to get or create the semaphore for each user
 def get_user_semaphore(user_id):
     if user_id not in user_semaphores:
-        user_semaphores[user_id] = Semaphore(4)
+        user_semaphores[user_id] = Semaphore(5)
     return user_semaphores[user_id]
 
 async def process_task(user_id, task):
@@ -278,7 +278,7 @@ async def handle_files(client: Client, message: Message):
         )
    
     async def task():
-        await asyncio.sleep(1)  # Prevent excessive rate limiting
+        await asyncio.sleep(1)
         await download_msg.edit("Processing... ⚡")
         try:
             path = await client.download_media(
@@ -334,6 +334,7 @@ async def handle_files(client: Client, message: Message):
         caption = c_caption.format(filename=new_file_name, filesize=humanbytes(message.document.file_size), duration=convert(duration)) if c_caption else f"**{new_file_name}**"
         
         # Initialize user-specific data if not present
+        await asyncio.sleep(1)
         if user_id not in user_files:
             user_files[user_id] = []  # List for storing user-specific files/messages
         if user_id not in file_count:
@@ -346,6 +347,7 @@ async def handle_files(client: Client, message: Message):
                 "total_renamed_size": await db.get_total_renamed_size()
             }
  
+        await asyncio.sleep(1)
         # Increment user-specific file count
         file_count[user_id] += 1
         await db.update_file_count(user_id, file_count[user_id])
@@ -364,6 +366,7 @@ async def handle_files(client: Client, message: Message):
         else:
             file_size = 0  # Default to 0 if no file size is found
 
+        await asyncio.sleep(1)
         # Increment global counters
         global_stats["total_files_renamed"] += 1
         await db.update_total_files_renamed(global_stats["total_files_renamed"])
@@ -623,7 +626,6 @@ async def sequence_dump(client, message: Message):
         except Exception as e:
             failed_files.append(f"Failed to send file: {item['file_name']} (Error: {e})")
 
-        # Update the previous season
         previous_season = current_season
 
     # Send final end message if needed
@@ -632,6 +634,7 @@ async def sequence_dump(client, message: Message):
         if end_msg:
             await send_custom_message(client, dump_channel, end_msg, queue[-1], queue[0], queue[-1])
 
+    sequence_notified[user_id] = False
     await db.clear_user_sequence_queue(user_id)
     await status_message.delete()
 
