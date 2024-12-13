@@ -205,7 +205,7 @@ async def start_dump(client, message: Message):
     await message.reply_text(
         "Please send the **start message** for each season. "
         "You can send text, an image (with or without caption), or a sticker. "
-        "Placeholders like {quality}, {title}, and {firstepisode} can be used."
+        "Placeholders like {quality}, {title}, {season} and {firstepisode} can be used."
     )
 
     response = await client.listen(message.chat.id)
@@ -229,7 +229,7 @@ async def end_dump(client, message: Message):
     await message.reply_text(
         "Please send the **end message** for each season. "
         "You can send text, an image (with or without caption), or a sticker. "
-        "Placeholders like {quality}, {title}, {firstepisode}, and {lastepisode} can be used."
+        "Placeholders like {quality}, {title}, {firstepisode}, {season} and {lastepisode} can be used."
     )
 
     response = await client.listen(message.chat.id)
@@ -268,12 +268,14 @@ async def show_dump_text(client, message: Message):
     end_message = await db.get_end_message(user_id) or {"text": "No end message set."}
 
     response_text = (
-        f"**Start message:**\n{start_message.get('text', 'N/A')}\n"
-        f"Sticker: {'Yes' if start_message.get('sticker_id') else 'No'}\n"
-        f"Image: {'Yes' if start_message.get('image_id') else 'No'}\n\n"
-        f"**End message:**\n{end_message.get('text', 'N/A')}\n"
-        f"Sticker: {'Yes' if end_message.get('sticker_id') else 'No'}\n"
-        f"Image: {'Yes' if end_message.get('image_id') else 'No'}"
+        f"**✨ Start Message:**\n\n"
+        f"📜 **Text:** {start_message.get('text', 'N/A')}\n"
+        f"🖼️ **Sticker:** {'✅ Yes' if start_message.get('sticker_id') else '❌ No'}\n"
+        f"📷 **Image:** {'✅ Yes' if start_message.get('image_id') else '❌ No'}\n\n"
+        f"**🌟 End Message:**\n\n"
+        f"📜 **Text:** {end_message.get('text', 'N/A')}\n"
+        f"🖼️ **Sticker:** {'✅ Yes' if end_message.get('sticker_id') else '❌ No'}\n"
+        f"📷 **Image:** {'✅ Yes' if end_message.get('image_id') else '❌ No'}"
     )
 
     await message.reply_text(response_text)
