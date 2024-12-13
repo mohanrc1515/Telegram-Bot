@@ -280,7 +280,6 @@ async def handle_files(client: Client, message: Message):
 
         else:
             await asyncio.sleep(1)
-            await download_msg.edit("Processing....  ⚡")
             
         duration = 0
         try:
@@ -291,10 +290,10 @@ async def handle_files(client: Client, message: Message):
             print(f"Error getting duration: {e}")
             
         try:
-            upload_msg = await download_msg.edit("Trying To Upload...")
+            upload_msg = await download_msg.edit("Upload in progress... ⚡")
         except FloodWait as e:
             await asyncio.sleep(e.value)  # Wait dynamically if FloodWait error occurs
-            upload_msg = await download_msg.edit("Trying To Upload...")  # Retry edit
+            upload_msg = await download_msg.edit("Upload in progress... ⚡")  # Retry edit
                 
         ph_path = None
         c_caption = await db.get_caption(message.chat.id)
