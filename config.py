@@ -224,7 +224,7 @@ Get Premium: Enhance your file renaming capabilities and enjoy the full potentia
 
 4. **/dlt_enddump** : Delete the dump end message.
 
-5. **/dumptext** : Check your current text for dump message or weather you've added pic, sticker or not...
+5. **/showdumptext** : Check your current text for dump message or weather you've added pic, sticker or not...
 
 6. **/dumptextmode**  
    - Select your preferred display mode for the messages:  
