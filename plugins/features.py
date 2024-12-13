@@ -23,6 +23,7 @@ async def features_command(client, message):
 ➤ **Autorename Feature**  
 ➤ **Metadata Editing**
 ➤ **Files Dumping**
+➤ **Custom Message Before & After Dump**
 ➤ **Files Sequencing**
 ➤ **Refer & Gain Authentication**  
 ➤ **Custom Thumbnail & Caption**
@@ -60,6 +61,7 @@ async def features_callback(client, query: CallbackQuery):
 ➤ **Autorename Feature**  
 ➤ **Metadata Editing**
 ➤ **Files Dumping**
+➤ **Custom Message Before & After Dump**
 ➤ **Files Sequencing**
 ➤ **Refer & Gain Authentication**  
 ➤ **Custom Thumbnail & Caption**
