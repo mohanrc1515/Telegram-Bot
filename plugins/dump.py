@@ -214,12 +214,15 @@ async def start_dump(client, message: Message):
             "- **{lastepisode}**: Last episode"
         )
         return
+
     # Check if the replied message is a sticker, image, or text
     if replied.sticker:
-        await db.set_start_message(user_id, sticker_id=replied.sticker.file_id, text=replied.sticker.caption or "")
+        caption = replied.text if replied.text else ""  # Use message text as caption for stickers
+        await db.set_start_message(user_id, sticker_id=replied.sticker.file_id, text=caption)
         await message.reply_text("Start message set with a sticker.")
     elif replied.photo:
-        await db.set_start_message(user_id, image_id=replied.photo.file_id, text=replied.photo.caption or "")
+        caption = replied.photo.caption if replied.photo.caption else ""  # Handle photo caption
+        await db.set_start_message(user_id, image_id=replied.photo.file_id, text=caption)
         await message.reply_text("Start message set with an image.")
     elif replied.text:
         await db.set_start_message(user_id, text=replied.text)
@@ -271,7 +274,7 @@ async def delete_end_dump(client, message: Message):
     await db.delete_end_message(user_id)
     await message.reply_text("End message deleted.")
 
-@Client.on_message(filters.command("dumptext"))
+@Client.on_message(filters.command("showdumptext"))
 async def show_dump_text(client, message: Message):
     user_id = message.from_user.id
 
