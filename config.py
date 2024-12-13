@@ -200,32 +200,29 @@ Get Premium: Enhance your file renaming capabilities and enjoy the full potentia
 """
 
 
-    DUMPMESSAGE_TXT= """**📖 Dump Messages Guide**  
+    DUMPMESSAGE_TXT= """**📖 <u>Dump Messages Guide</u> 📖**  
 
-1. **/startdump**  
-   - Reply to a text, image, or sticker to set the **Dump start message**.  
-   - You can also use placeholders:  
-     - `{quality}` = Quality (e.g., 1080p)  
-     - `{title}` = Series title  
-     - `{season}` = Season number  
-     - `{firstepisode}` = First episode  
-     - `{lastepisode}` = Last episode  
-   - **Example:**  
-     `✨ Season {season}: Ep {firstepisode}-{lastepisode} | {quality}`  
+1. **/startdump** : Reply to a text, image, or sticker to set the **Dump start message**.  
+- You can also use placeholders:  
+ - `{quality}` = Quality (e.g., 1080p)  
+ - `{title}` = Series title  
+ - `{season}` = Season number  
+ - `{firstepisode}` = First episode of the season  
+ - `{lastepisode}` = Last episode of the season
+  
+• **Example:**  
+`✨ Season {season}: Ep {firstepisode}-{lastepisode} | {quality}`  
 
-2. **/enddump**  
-   - Same as `/startdump` but for the **end message**.
+2. **/enddump** : Same as `/startdump` but for the **end message**.
 
-3. **/dlt_startdump**  
-   - Delete the dump start message.  
+3. **/dlt_startdump** : Delete the dump start message.  
 
-4. **/dlt_enddump**  
-   - Delete the dump end message.  
+4. **/dlt_enddump** : Delete the dump end message.  
 
-5. **/showdumptext**  
-   - View your current dump messages status.  
+5. **/showdumptext** : View your current dump messages status.  
 
-6. **/dumptextmode**  
-   - Set when to show messages: **Season**, **Quality**, or **Both**.
+6. **/dumptextmode** : Set when to show messages: **Season**, **Quality**, or **Both**.
    
-<blockquote>This determines whether you want to include dump messages before and after quality changes, season changes, or both. Use it and you'll understand what I mean.</blockquote>"""
+This determines whether you want to include dump messages before and after quality changes, season changes, or both. Use it and you'll understand what I mean."""
+
+
