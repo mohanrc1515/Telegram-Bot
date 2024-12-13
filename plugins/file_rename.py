@@ -539,29 +539,16 @@ async def sequence_dump(client, message: Message):
 
     # Sorting by season, episode, volume, chapter, then quality
     queue.sort(key=lambda x: (
-        quality_priority.get(x['quality'], float('inf')),  # Quality is prioritized first
-        x['season'], 
-        x['episode'], 
-        x['volume'], 
+        quality_priority.get(x['quality'], float('inf')),
+        x['season'],
+        x['episode'],
+        x['volume'],
         x['chapter']
     ))
 
     dump_channel = await db.get_dump_channel(user_id)
     if not dump_channel:
         return await message.reply_text("No dump channel found. Please connect it using /dump.")
-
-    # Send start message if it's the first episode of a season
-    first_item = queue[0]
-    if first_item['season'] > 0:
-        start_msg = await db.get_start_message(user_id)
-        if start_msg:
-            if isinstance(start_msg, dict):
-                start_msg = start_msg.get('text', '')
-            start_msg = start_msg.replace("{quality}", first_item['quality'])
-            start_msg = start_msg.replace("{title}", extract_title(first_item['file_name']))
-            start_msg = end_msg.replace("{firstepisode}", str(first_item['episode']))
-            start_msg = end_msg.replace("{lastepisode}", str(last_item['episode']))
-            await client.send_message(dump_channel, start_msg)
 
     status_message = await message.reply_text("Starting to send files in sequence to channel...")
     send_methods = {
@@ -572,10 +559,25 @@ async def sequence_dump(client, message: Message):
     }
 
     failed_files = []
+    previous_season = None
 
-    for item in queue:
+    for index, item in enumerate(queue):
+        current_season = item['season']
         send_method = send_methods.get(item['file_type'])
 
+        # Send end message for the previous season if the season changes
+        if previous_season is not None and previous_season != current_season:
+            end_msg = await db.get_end_message(user_id)
+            if end_msg:
+                await send_custom_message(client, dump_channel, end_msg, item, queue[0], queue[index - 1])
+
+        # Send start message for the new season
+        if previous_season is None or previous_season != current_season:
+            start_msg = await db.get_start_message(user_id)
+            if start_msg:
+                await send_custom_message(client, dump_channel, start_msg, item, queue[0])
+
+        # Send the file
         if not send_method:
             failed_files.append(f"Unsupported media type: {item['file_name']} ({item['file_type']})")
             continue
@@ -585,37 +587,43 @@ async def sequence_dump(client, message: Message):
         except Exception as e:
             failed_files.append(f"Failed to send file: {item['file_name']} (Error: {e})")
 
-    # Send end message if it's the last episode of a season
-    last_item = queue[-1]
-    if last_item['season'] > 0:
+        # Update the previous season
+        previous_season = current_season
+
+    # Send final end message if needed
+    if previous_season is not None:
         end_msg = await db.get_end_message(user_id)
         if end_msg:
-            if isinstance(end_msg, dict):
-                end_msg = end_msg.get('text', '')
-            end_msg = end_msg.replace("{quality}", last_item['quality'])
-            end_msg = end_msg.replace("{title}", extract_title(last_item['file_name']))
-            await client.send_message(dump_channel, end_msg)
+            await send_custom_message(client, dump_channel, end_msg, queue[-1], queue[0], queue[-1])
 
-    sequence_notified[user_id] = False
     await db.clear_user_sequence_queue(user_id)
-    await client.delete_messages(chat_id=message.chat.id, message_ids=status_message.id)
+    await status_message.delete()
 
     if failed_files:
         await message.reply_text(f"Files sent, but some failed:\n" + "\n".join(failed_files))
     else:
         await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
 
-# Retry function for file sending
-async def send_file_with_retry(send_method, dump_channel, item):
-    try:
-        await send_method(dump_channel, **{
-            item['file_type']: item['file_id'],
-            'caption': item['file_name']
-        })
-    except FloodWait as e:
-        print(f"Flood wait of {e.value} seconds for file {item['file_name']}")
-        await asyncio.sleep(e.value)
-        await send_file_with_retry(send_method, dump_channel, item)
+
+async def send_custom_message(client, dump_channel, message_data, current_item, first_item=None, last_item=None):
+    # Replace placeholders in the message
+    message_text = message_data.get('text', '').replace("{quality}", current_item['quality'])
+    message_text = message_text.replace("{title}", extract_title(current_item['file_name']))
+    if first_item:
+        message_text = message_text.replace("{firstepisode}", str(first_item['episode']))
+    if last_item:
+        message_text = message_text.replace("{lastepisode}", str(last_item['episode']))
+
+    # Retrieve optional sticker or image IDs
+    sticker_id = message_data.get('sticker_id')
+    image_id = message_data.get('image_id')
+
+    if sticker_id:
+        await client.send_sticker(dump_channel, sticker_id)
+    elif image_id:
+        await client.send_photo(dump_channel, image_id, caption=message_text)
+    else:
+        await client.send_message(dump_channel, message_text)
 
         
 
