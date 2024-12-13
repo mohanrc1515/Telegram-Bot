@@ -151,3 +151,14 @@ async def close_callback(client, query: CallbackQuery):
         await query.message.continue_propagation()
     await query.answer()
     
+@Client.on_message(filters.private & filters.command(["dumptext"]))
+async def customdumptext_cmd(client, message):
+    await message.edit_text(
+        text=Txt.DUMPMESSAGE_TXT,
+        disable_web_page_preview=True,
+        reply_markup=InlineKeyboardMarkup([[
+            InlineKeyboardButton("Cᴏɴғɪɢᴜʀᴇ Bᴏᴛ Sᴇᴛᴛɪɴɢꜱ", callback_data='settings')
+        ],[
+            InlineKeyboardButton('Cʟᴏꜱᴇ', callback_data='close'),
+        ]])
+    )
