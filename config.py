@@ -200,37 +200,32 @@ Get Premium: Enhance your file renaming capabilities and enjoy the full potentia
 """
 
 
-    DUMPMESSAGE_TXT = """
-**📂 Dump Messages Guide:**
+    DUMPMESSAGE_TXT= """**📖 Dump Messages Guide**  
 
 1. **/startdump**  
-   - Set the **start message** for each season or quality. You can send a text, image (with or without caption), or a sticker.  
-   - Use placeholders for dynamic content:  
-     - **{quality}**: The quality of the content (e.g., 1080p)  
-     - **{title}**: The title of the series  
-     - **{season}**: The season number  
-     - **{firstepisode}**: The first episode number  
-     - **{lastepisode}**: The last episode number  
-   - Example Format:  
-     `✧ Season {season} : [{firstepisode} - {lastepisode}]  
-     ✧ {quality} [English + Japanese]`
+   - Reply to a text, image, or sticker to set the **Dump start message**.  
+   - You can also use placeholders:  
+     - `{quality}` = Quality (e.g., 1080p)  
+     - `{title}` = Series title  
+     - `{season}` = Season number  
+     - `{firstepisode}` = First episode  
+     - `{lastepisode}` = Last episode  
+   - **Example:**  
+     `✨ Season {season}: Ep {firstepisode}-{lastepisode} | {quality}`  
 
 2. **/enddump**  
-   - Set the **end message** for each season or quality, similar to the `/startdump` command.  
-   - You can use text, images, or stickers.  
-   - Use the same placeholders for dynamic content as in `/startdump`.
+   - Same as `/startdump` but for the **end message**.
 
-3. **/dlt_startdump** : Delete the dump start message.
+3. **/dlt_startdump**  
+   - Delete the start message.  
 
-4. **/dlt_enddump** : Delete the dump end message.
+4. **/dlt_enddump**  
+   - Delete the end message.  
 
-5. **/showdumptext** : Check your current text for dump message or weather you've added pic, sticker or not...
+5. **/showdumptext**  
+   - View your current dump messages.  
 
 6. **/dumptextmode**  
-   - Select your preferred display mode for the messages:  
-     - **Season**  
-     - **Quality**  
-     - **Both**  
-   This diecides weather you want dump message after quality changes or season or both. Use it youllunderstand what I meant...
-"""
-    
+   - Set when to show messages: **Season**, **Quality**, or **Both**.
+   
+<blockquote>This determines whether you want to include dump messages before and after quality changes, season changes, or both. Use it and you'll understand what I mean.</blockquote>"""
