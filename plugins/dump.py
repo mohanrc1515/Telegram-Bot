@@ -233,37 +233,39 @@ async def start_dump(client, message: Message):
         await message.reply_text(f"An error occurred while setting the start message: {e}")
 
 
+
 @Client.on_message(filters.command("enddump") & filters.private)
 async def end_dump(client, message: Message):
     user_id = message.from_user.id
-    await message.reply_text(
-        "Please send the **start message** for each season. "
-        "You have the flexibility to send the message as plain text, an image (with or without a caption), or a sticker. "
-        "You can also make use of the following placeholders to dynamically modify the message:\n\n"
-        "- **{quality}**: The quality of the content (e.g., 1080p)\n"
-        "- **{title}**: The title of the series\n"
-        "- **{season}**: The season number\n"
-        "- **{firstepisode}**: The first episode number\n"
-        "- **{lastepisode}**: The last episode number\n\n"
-        "**Example Format**:\n"
-        "✧ Season {season} : [{firstepisode} - {lastepisode}]\n"
-        "✧ {quality} [English + Japanese]"
-    )
+    replied = message.reply_to_message
+    if not replied:
+        await message.reply_text(
+            "Dear user, please reply to the **text**, **image**, or **sticker** "
+            "you want to set as the end message for dumping. Use the placeholders:\n\n"
+            "- **{quality}**: Content quality (e.g., 1080p)\n"
+            "- **{title}**: Series title\n"
+            "- **{season}**: Season number\n"
+            "- **{firstepisode}**: First episode\n"
+            "- **{lastepisode}**: Last episode"
+        )
+        return
 
-    response = await client.listen(message.chat.id)
-
-    # Determine if the response is a sticker, image, or text
-    if response.sticker:
-        await db.set_end_message(user_id, sticker_id=response.sticker.file_id, text=response.caption or "")
-        await message.reply_text("End message set with a sticker.")
-    elif response.photo:
-        await db.set_end_message(user_id, image_id=response.photo.file_id, text=response.caption or "")
-        await message.reply_text("End message set with an image.")
-    elif response.text:
-        await db.set_end_message(user_id, text=response.text)
-        await message.reply_text(f"End message set:\n{response.text}")
-    else:
-        await message.reply_text("Invalid format. Please send a text, image, or sticker.")
+    try:
+        # Check if the replied message is a sticker, image, or text
+        if replied.sticker:
+            caption = replied.text if replied.text else ""  # Stickers have no caption, use text if available
+            await db.set_end_message(user_id, sticker_id=replied.sticker.file_id, text=caption)
+            await message.reply_text("Start message set with a sticker.")
+        elif replied.photo:
+            await db.set_end_message(user_id, image_id=replied.photo.file_id, text=replied.caption or "")
+            await message.reply_text("Start message set with an image.")
+        elif replied.text:
+            await db.set_end_message(user_id, text=replied.text)
+            await message.reply_text(f"Start message set:\n{replied.text}")
+        else:
+            await message.reply_text("Invalid format. Please reply to a text, image, or sticker.")
+    except Exception as e:
+        await message.reply_text(f"An error occurred while setting the start message: {e}")
 
 @Client.on_message(filters.command("dlt_startdump") & filters.private)
 async def delete_start_dump(client, message: Message):
