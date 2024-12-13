@@ -607,7 +607,7 @@ async def sequence_dump(client, message: Message):
     previous_season = None
     previous_quality = None
 
-    # Get user preference (season or quality) from the DB
+    # Get user preference (season or quality or both) from the DB
     message_type = await db.get_user_preference(user_id)  # Retrieve from DB
 
     for index, item in enumerate(queue):
@@ -640,6 +640,22 @@ async def sequence_dump(client, message: Message):
                 if start_msg:
                     await send_custom_message(client, dump_channel, start_msg, item, queue[0])
 
+            previous_quality = current_quality
+
+        elif message_type == 'both':
+            # Handle both season and quality changes
+            if (previous_season is not None and previous_season != current_season) or \
+               (previous_quality is not None and previous_quality != current_quality):
+                end_msg = await db.get_end_message(user_id)
+                if end_msg:
+                    await send_custom_message(client, dump_channel, end_msg, item, queue[0], queue[index - 1])
+
+            if previous_season is None or previous_season != current_season or previous_quality is None or previous_quality != current_quality:
+                start_msg = await db.get_start_message(user_id)
+                if start_msg:
+                    await send_custom_message(client, dump_channel, start_msg, item, queue[0])
+
+            previous_season = current_season
             previous_quality = current_quality
 
         # Send the file
