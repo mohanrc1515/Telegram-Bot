@@ -153,12 +153,16 @@ async def close_callback(client, query: CallbackQuery):
     
 @Client.on_message(filters.private & filters.command(["dumptext"]))
 async def customdumptext_cmd(client, message):
-    await message.reply_text(
-        text=Txt.DUMPMESSAGE_TXT,
-        disable_web_page_preview=True,
-        reply_markup=InlineKeyboardMarkup([[
-            InlineKeyboardButton("Cᴏɴғɪɢᴜʀᴇ Dᴜᴍᴘ Sᴇᴛᴛɪɴɢꜱ", callback_data='dump_settings')
-        ],[
-            InlineKeyboardButton('Cʟᴏꜱᴇ', callback_data='close'),
-        ]])
+    # Send the image first
+    await message.reply_photo(
+        photo="https://envs.sh/ltZ.jpg",
+        caption=Txt.DUMPMESSAGE_TXT,
+        reply_markup=InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("Cᴏɴғɪɢᴜʀᴇ Dᴜᴍᴘ Sᴇᴛᴛɪɴɢꜱ", callback_data='dump_settings')
+            ],
+            [
+                InlineKeyboardButton('Cʟᴏꜱᴇ', callback_data='close')
+            ]
+        ])
     )
