@@ -45,6 +45,39 @@ async def process_task(user_id, task):
         await task()
         await asyncio.sleep(5)
 
+async def send_file_with_retry(send_method, dump_channel, item):
+    try:
+        # Attempt to send the file
+        await send_method(dump_channel, **{
+            item['file_type']: item['file_id'],
+            'caption': item['file_name']
+        })
+    except FloodWait as e:
+        # If FloodWait occurs, wait for the specified time and retry
+        print(f"Flood wait of {e.value} seconds for file {item['file_name']}")
+        await asyncio.sleep(e.value)
+        await send_file_with_retry(send_method, dump_channel, item)
+
+async def send_custom_message(client, dump_channel, message_data, current_item, first_item=None, last_item=None):
+    # Replace placeholders in the message
+    message_text = message_data.get('text', '').replace("{quality}", current_item['quality'])
+    message_text = message_text.replace("{title}", extract_title(current_item['file_name']))
+    if first_item:
+        message_text = message_text.replace("{firstepisode}", str(first_item['episode']))
+    if last_item:
+        message_text = message_text.replace("{lastepisode}", str(last_item['episode']))
+
+    # Retrieve optional sticker or image IDs
+    sticker_id = message_data.get('sticker_id')
+    image_id = message_data.get('image_id')
+
+    if sticker_id:
+        await client.send_sticker(dump_channel, sticker_id)
+    elif image_id:
+        await client.send_photo(dump_channel, image_id, caption=message_text)
+    else:
+        await client.send_message(dump_channel, message_text)
+
 # Start sequencing command
 @Client.on_message(filters.command("startsequence") & filters.private)
 async def start_sequence(client, message: Message):
@@ -607,39 +640,6 @@ async def sequence_dump(client, message: Message):
     else:
         await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
 
-
-async def send_custom_message(client, dump_channel, message_data, current_item, first_item=None, last_item=None):
-    # Replace placeholders in the message
-    message_text = message_data.get('text', '').replace("{quality}", current_item['quality'])
-    message_text = message_text.replace("{title}", extract_title(current_item['file_name']))
-    if first_item:
-        message_text = message_text.replace("{firstepisode}", str(first_item['episode']))
-    if last_item:
-        message_text = message_text.replace("{lastepisode}", str(last_item['episode']))
-
-    # Retrieve optional sticker or image IDs
-    sticker_id = message_data.get('sticker_id')
-    image_id = message_data.get('image_id')
-
-    if sticker_id:
-        await client.send_sticker(dump_channel, sticker_id)
-    elif image_id:
-        await client.send_photo(dump_channel, image_id, caption=message_text)
-    else:
-        await client.send_message(dump_channel, message_text)
-
- async def send_file_with_retry(send_method, dump_channel, item):
-    try:
-        # Attempt to send the file
-        await send_method(dump_channel, **{
-            item['file_type']: item['file_id'],
-            'caption': item['file_name']
-        })
-    except FloodWait as e:
-        # If FloodWait occurs, wait for the specified time and retry
-        print(f"Flood wait of {e.value} seconds for file {item['file_name']}")
-        await asyncio.sleep(e.value)
-        await send_file_with_retry(send_method, dump_channel, item)
 
 @Client.on_message(filters.command("cleardump") & filters.private)
 async def clear_sequence_dump(client, message: Message):
