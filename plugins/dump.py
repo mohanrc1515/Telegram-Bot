@@ -281,79 +281,51 @@ async def show_dump_text(client, message: Message):
     await message.reply_text(response_text)
 
 
-@Client.on_message(filters.command("dumptextset") & filters.private)
-async def dump_text_set(client, message: Message):
-    user_id = message.from_user.id
-    # Get the current trigger from the database to display the selected one
-    current_trigger = await db.get_user_dumptext_trigger(user_id)
-    
-    # Define buttons with a check mark (✅) if the option is selected
-    buttons = [
-        [InlineKeyboardButton(
-            "Season ✅" if current_trigger == "season" else "Season", callback_data="set_dumptext_season")],
-        [InlineKeyboardButton(
-            "Quality ✅" if current_trigger == "quality" else "Quality", callback_data="set_dumptext_quality")]
-    ]
-    
-    # Prompt user to select the trigger type
-    reply_markup = InlineKeyboardMarkup(buttons)
-    await message.reply_text(
-        "Please select the trigger for the dump text:",
-        reply_markup=reply_markup
-    )
-
-
-@Client.on_callback_query(filters.regex(r"set_dumptext_(season|quality)"))
-async def set_dumptext_trigger(client, callback_query: CallbackQuery):
-    user_id = callback_query.from_user.id
-    trigger_type = callback_query.data.split("_")[-1]  # Extract season or quality
-    
-    # Save user's choice in the database
-    await db.set_user_dumptext_trigger(user_id, trigger_type)
-    
-    # Edit the message to reflect the updated choice with ✅ on the selected option
-    current_trigger = await db.get_user_dumptext_trigger(user_id)
-    
-    buttons = [
-        [InlineKeyboardButton(
-            "Season ✅" if current_trigger == "season" else "Season", callback_data="set_dumptext_season")],
-        [InlineKeyboardButton(
-            "Quality ✅" if current_trigger == "quality" else "Quality", callback_data="set_dumptext_quality")]
-    ]
-    
-    await callback_query.answer(f"Dump text will now trigger on {trigger_type.capitalize()} change.")
-    await callback_query.message.edit_text(
-        f"Dump text trigger set to **{trigger_type.capitalize()}**.",
-        reply_markup=InlineKeyboardMarkup(buttons)
-    )
-
-@Client.on_message(filters.command("switch") & filters.private)
-async def switch_message_type(client, message: Message):
+@Client.on_message(filters.command("dumptextmode") & filters.private)
+async def dumptextmode(client, message: Message):
     user_id = message.from_user.id
 
     # Retrieve current user preference from the database
     current_preference = await db.get_user_preference(user_id)  # Assume 'db' handles DB operations
 
-    # Determine the new preference and the text for the buttons
-    if current_preference == 'season':
-        new_preference = 'quality'
-        button_season = InlineKeyboardButton(f"Season", callback_data="season")
-        button_quality = InlineKeyboardButton(f"Quality ✅", callback_data="quality")
-    else:
-        new_preference = 'season'
-        button_season = InlineKeyboardButton(f"Season ✅", callback_data="season")
-        button_quality = InlineKeyboardButton(f"Quality", callback_data="quality")
+    # Define the button labels and callback data
+    button_season = InlineKeyboardButton(f"Season ✅" if current_preference == 'season' else "Season", callback_data="season")
+    button_quality = InlineKeyboardButton(f"Quality ✅" if current_preference == 'quality' else "Quality", callback_data="quality")
+    button_both = InlineKeyboardButton(f"Both ✅" if current_preference == 'both' else "Both", callback_data="both")
 
-    # Create the buttons and send a message with them
-    buttons = InlineKeyboardMarkup([[button_season, button_quality]])
+    # Create the buttons layout
+    buttons = InlineKeyboardMarkup([[button_season, button_quality, button_both]])
 
-    # Update user preference in the database
-    await db.set_user_preference(user_id, new_preference)
-
-    # Notify the user and show the buttons
+    # Send a message with the buttons
     await message.reply_text(
-        f"Switched to {new_preference} mode. You can now choose the mode below:",
+        "Please select your preferred mode:",
         reply_markup=buttons
     )
 
+@Client.on_callback_query(filters.regex('^(season|quality|both)$'))
+async def handle_switch_callback(client, callback_query):
+    user_id = callback_query.from_user.id
+    selected_mode = callback_query.data
 
+    # Update the user's preference in the database
+    await db.set_user_preference(user_id, selected_mode)
+
+    # Retrieve the updated preference to re-render buttons
+    current_preference = await db.get_user_preference(user_id)
+
+    # Update buttons based on the selected mode
+    button_season = InlineKeyboardButton(f"Season ✅" if current_preference == 'season' else "Season", callback_data="season")
+    button_quality = InlineKeyboardButton(f"Quality ✅" if current_preference == 'quality' else "Quality", callback_data="quality")
+    button_both = InlineKeyboardButton(f"Both ✅" if current_preference == 'both' else "Both", callback_data="both")
+
+    # Create the updated button layout
+    buttons = InlineKeyboardMarkup([[button_season, button_quality, button_both]])
+
+    # Edit the original message with the updated buttons
+    await callback_query.message.edit_text(
+        "Please select your preferred mode:",
+        reply_markup=buttons
+    )
+
+    # Acknowledge the callback query
+    await callback_query.answer(f"Switched to {selected_mode} mode!")
