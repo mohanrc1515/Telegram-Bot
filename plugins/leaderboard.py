@@ -13,7 +13,7 @@ async def leaderboard_command(client, message):
         await message.reply("No users have renamed files yet.")
         return
 
-    leaderboard_message = "🏆 **Our Top Renamers** 🏆\n\n"
+    leaderboard_message = "<u>🏆 **Our Top Renamers** 🏆</u>\n\n"
     for rank, user in enumerate(top_users, start=1):
         user_id = user['_id']
         file_count = user.get('file_count', 0)
