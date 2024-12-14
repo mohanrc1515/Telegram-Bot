@@ -70,4 +70,4 @@ async def top_referrals(client, message):
         await message.reply(top_referrers_message, reply_markup=keyboard)
     except Exception as e:
         print(f"Error: {e}")
-        await message.reply("An error occurred while fetching the top referrers.") you 
+        await message.reply("An error occurred while fetching the top referrers.")
