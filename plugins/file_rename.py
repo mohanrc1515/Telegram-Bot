@@ -43,46 +43,6 @@ async def process_task(user_id, task):
     semaphore = get_user_semaphore(user_id)
     async with semaphore:
         await task()
-        await asyncio.sleep(5)
-
-async def send_file_with_retry(send_method, dump_channel, item):
-    try:
-        # Attempt to send the file
-        await send_method(dump_channel, **{
-            item['file_type']: item['file_id'],
-            'caption': item['file_name']
-        })
-    except FloodWait as e:
-        # If FloodWait occurs, wait for the specified time and retry
-        print(f"Flood wait of {e.value} seconds for file {item['file_name']}")
-        await asyncio.sleep(e.value)
-        await send_file_with_retry(send_method, dump_channel, item)
-
-async def send_custom_message(client, dump_channel, message_data, current_item, first_item=None, last_item=None):
-    # Replace placeholders in the message text
-    message_text = message_data.get('text', '').replace("{quality}", current_item['quality'])
-    message_text = message_text.replace("{title}", extract_title(current_item['file_name']))
-    message_text = message_text.replace("{season}", str(current_item.get('season', '')))
-    
-    if first_item:
-        message_text = message_text.replace("{firstepisode}", str(first_item.get('episode', '')))
-    if last_item:
-        message_text = message_text.replace("{lastepisode}", str(last_item.get('episode', '')))
-
-    # Retrieve optional sticker or image IDs
-    sticker_id = message_data.get('sticker_id')
-    image_id = message_data.get('image_id')
-
-    # Send the appropriate type of message
-    try:
-        if sticker_id:
-            await client.send_sticker(dump_channel, sticker_id)
-        elif image_id:
-            await client.send_photo(dump_channel, image_id, caption=message_text)
-        else:
-            await client.send_message(dump_channel, message_text)
-    except Exception as e:
-        print(f"Failed to send message: {e}")
 
 # Start sequencing command
 @Client.on_message(filters.command("startsequence") & filters.private)
@@ -225,6 +185,18 @@ async def handle_files(client: Client, message: Message):
 
     if not format_template:
         return await message.reply_text("Please Set An Auto Rename Format First Using /autorename")    
+        
+    # Initialize user_files and file_count if not present
+    if user_id not in user_files:
+        user_files[user_id] = []
+    if user_id not in file_count:
+        file_count[user_id] = await db.get_file_count(user_id)  # Fetch from DB
+
+    # Update file count
+    file_count[user_id] += 1
+    await db.update_file_count(user_id, file_count[user_id])
+    
+    user_files[user_id].append(message)
     
     file = message.document or message.video or message.audio
     if not file:
@@ -276,16 +248,10 @@ async def handle_files(client: Client, message: Message):
     
     # Initialize the file based on media type
     file = message.document or message.video or message.audio
-    if file:
-        # Reply with the specified message, ensuring the reply is quoted
-        download_msg = await message.reply_text(
-            "Your file has been added to the queue and will be processed soon.",
-            quote=True
-        )
    
     async def task():
-        await asyncio.sleep(1)
-        await download_msg.edit("Processing... ⚡")
+        await asyncio.sleep(1)  # Prevent excessive rate limiting
+        download_msg = await message.reply_text("Processing...⚡")
         try:
             path = await client.download_media(
                 message=file,
@@ -318,7 +284,7 @@ async def handle_files(client: Client, message: Message):
             await add_metadata(path, metadata_path, sub_title, sub_author, sub_subtitle, sub_audio, sub_video, sub_artist, download_msg)
 
         else:
-            await asyncio.sleep(1)
+            await download_msg.edit("Processing....  ⚡")
             
         duration = 0
         try:
@@ -329,59 +295,15 @@ async def handle_files(client: Client, message: Message):
             print(f"Error getting duration: {e}")
             
         try:
-            upload_msg = await download_msg.edit("Upload in progress... ⚡")
+            upload_msg = await download_msg.edit("Trying To Upload...⚡")
         except FloodWait as e:
             await asyncio.sleep(e.value)  # Wait dynamically if FloodWait error occurs
-            upload_msg = await download_msg.edit("Upload in progress... ⚡")  # Retry edit
+            upload_msg = await download_msg.edit("Trying To Upload...⚡")  # Retry edit
                 
         ph_path = None
         c_caption = await db.get_caption(message.chat.id)
         c_thumb = await db.get_thumbnail(message.chat.id)
         caption = c_caption.format(filename=new_file_name, filesize=humanbytes(message.document.file_size), duration=convert(duration)) if c_caption else f"**{new_file_name}**"
-        
-        # Initialize user-specific data if not present
-        await asyncio.sleep(1)
-        if user_id not in user_files:
-            user_files[user_id] = []  # List for storing user-specific files/messages
-        if user_id not in file_count:
-            file_count[user_id] = await db.get_file_count(user_id)  # Fetch user's file count from DB
-
-    # Fetch and initialize global counters
-        if "global_stats" not in globals():
-            global_stats = {
-                "total_files_renamed": await db.get_total_files_renamed(),
-                "total_renamed_size": await db.get_total_renamed_size()
-            }
- 
-        await asyncio.sleep(1)
-        # Increment user-specific file count
-        file_count[user_id] += 1
-        await db.update_file_count(user_id, file_count[user_id])
-
-         # Extract file size based on file type
-        file_size = 0
-        if message.document:
-            file_size = message.document.file_size
-        elif message.video:
-            file_size = message.video.file_size
-        elif message.audio:
-            file_size = message.audio.file_size
-        elif message.photo:
-            # Telegram photos provide a list of sizes, use the largest one
-            file_size = message.photo[-1].file_size if message.photo else 0
-        else:
-            file_size = 0  # Default to 0 if no file size is found
-
-        await asyncio.sleep(1)
-        # Increment global counters
-        global_stats["total_files_renamed"] += 1
-        await db.update_total_files_renamed(global_stats["total_files_renamed"])
-
-        global_stats["total_renamed_size"] += file_size
-        await db.update_total_renamed_size(global_stats["total_renamed_size"])
-
-        # Append the current file/message to the user's file list
-        user_files[user_id].append(message)       
         
         if c_thumb:
             ph_path = await client.download_media(c_thumb)
@@ -395,7 +317,7 @@ async def handle_files(client: Client, message: Message):
             img.resize((320, 320))
             img.save(ph_path, "JPEG")
             logs_caption2 = f"{firstname}\n{user_id}\n{new_file_name}"
-      #     await client.send_document(Config.FILES_CHANNEL, document=file_path, caption=logs_caption2)
+            await client.send_document(Config.FILES_CHANNEL, document=file_path, caption=logs_caption2)
             
         dump_settings = {
             'dump_files': await db.get_dump_files(user_id),
@@ -555,16 +477,6 @@ async def handle_files(client: Client, message: Message):
             await process_task(user_id, task)
             user_queue.task_done()
 
-# Define the priority for each quality
-quality_priority = {
-    "480p": 1,
-    "720p": 2,
-    "1080p": 3,
-    "2160p": 4,
-    "4k": 5,
-    "8k": 6
-}
-
 @Client.on_message(filters.command("sequencedump") & filters.private)
 async def sequence_dump(client, message: Message):
     user_id = message.from_user.id
@@ -580,22 +492,17 @@ async def sequence_dump(client, message: Message):
         item['episode'] = int(extract_episode_number(file_name) or 0)
         item['chapter'] = int(extract_chapter_number(file_name) or 0)
         item['volume'] = int(extract_volume_number(file_name) or 0)
-        item['quality'] = extract_quality(file_name) or '0'
 
-    # Sorting by season, episode, volume, chapter, then quality
-    queue.sort(key=lambda x: (
-        quality_priority.get(x['quality'], float('inf')),
-        x['season'],
-        x['episode'],
-        x['volume'],
-        x['chapter']
-    ))
+    # Sorting: Prioritize by season, episode, volume, then chapter
+    queue.sort(key=lambda x: (x['season'], x['episode'], x['volume'], x['chapter']))
 
     dump_channel = await db.get_dump_channel(user_id)
     if not dump_channel:
         return await message.reply_text("No dump channel found. Please connect it using /dump.")
 
     status_message = await message.reply_text("Starting to send files in sequence to channel...")
+
+    # Dynamic method mapping for file types
     send_methods = {
         'document': client.send_document,
         'video': client.send_video,
@@ -604,94 +511,39 @@ async def sequence_dump(client, message: Message):
     }
 
     failed_files = []
-    previous_season = None
-    previous_quality = None
 
-    # Get user preference (season or quality or both) from the DB
-    message_type = await db.get_user_preference(user_id)  # Retrieve from DB
-
-    for index, item in enumerate(queue):
-        current_season = item['season']
-        current_quality = item['quality']
+    for item in queue:
         send_method = send_methods.get(item['file_type'])
 
-        # Handle season or quality changes based on user preference
-        if message_type == 'season':
-            if previous_season is not None and previous_season != current_season:
-                end_msg = await db.get_end_message(user_id)
-                if end_msg:
-                    await send_custom_message(client, dump_channel, end_msg, item, queue[0], queue[index - 1])
-
-            if previous_season is None or previous_season != current_season:
-                start_msg = await db.get_start_message(user_id)
-                if start_msg:
-                    await send_custom_message(client, dump_channel, start_msg, item, queue[0])
-
-            previous_season = current_season
-
-        elif message_type == 'quality':
-            if previous_quality is not None and previous_quality != current_quality:
-                end_msg = await db.get_end_message(user_id)
-                if end_msg:
-                    await send_custom_message(client, dump_channel, end_msg, item, queue[0], queue[index - 1])
-
-            if previous_quality is None or previous_quality != current_quality:
-                start_msg = await db.get_start_message(user_id)
-                if start_msg:
-                    await send_custom_message(client, dump_channel, start_msg, item, queue[0])
-
-            previous_quality = current_quality
-
-        elif message_type == 'both':
-            # Handle both season and quality changes
-            if (previous_season is not None and previous_season != current_season) or \
-               (previous_quality is not None and previous_quality != current_quality):
-                end_msg = await db.get_end_message(user_id)
-                if end_msg:
-                    await send_custom_message(client, dump_channel, end_msg, item, queue[0], queue[index - 1])
-
-            if previous_season is None or previous_season != current_season or previous_quality is None or previous_quality != current_quality:
-                start_msg = await db.get_start_message(user_id)
-                if start_msg:
-                    await send_custom_message(client, dump_channel, start_msg, item, queue[0])
-
-            previous_season = current_season
-            previous_quality = current_quality
-
-        # Send the file
         if not send_method:
             failed_files.append(f"Unsupported media type: {item['file_name']} ({item['file_type']})")
             continue
 
         try:
+            # Retry mechanism to handle flood wait
             await send_file_with_retry(send_method, dump_channel, item)
         except Exception as e:
             failed_files.append(f"Failed to send file: {item['file_name']} (Error: {e})")
 
-    # Send final end message if needed
-    if previous_season is not None or previous_quality is not None:
-        end_msg = await db.get_end_message(user_id)
-        if end_msg:
-            await send_custom_message(client, dump_channel, end_msg, queue[-1], queue[0], queue[-1])
-
     sequence_notified[user_id] = False
     await db.clear_user_sequence_queue(user_id)
-    await status_message.delete()
+    await client.delete_messages(chat_id=message.chat.id, message_ids=status_message.id)
 
+    # Notify user about the result
     if failed_files:
         await message.reply_text(f"Files sent, but some failed:\n" + "\n".join(failed_files))
     else:
         await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
 
-@Client.on_message(filters.command("cleardump") & filters.private)
-async def clear_sequence_dump(client, message: Message):
-    user_id = message.from_user.id
-
-    user_queue = await db.get_user_sequence_queue(user_id)
-    if user_queue:
-        sequence_notified[user_id] = False
-        await db.clear_user_sequence_queue(user_id)
-        await message.reply_text("Your sequence dump has been successfully cleared.")
-    else:
-        await message.reply_text("You don't have any files in your sequence dump.")
-        
+async def send_file_with_retry(send_method, dump_channel, item):
+    try:
+        # Attempt to send the file
+        await send_method(dump_channel, **{
+            item['file_type']: item['file_id'],
+            'caption': item['file_name']
+        })
+    except FloodWait as e:
+        # If FloodWait occurs, wait for the specified time and retry
+        print(f"Flood wait of {e.value} seconds for file {item['file_name']}")
+        await asyncio.sleep(e.value)
+        await send_file_with_retry(send_method, dump_channel, item)
