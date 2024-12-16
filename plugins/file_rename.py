@@ -625,6 +625,9 @@ async def sequence_dump(client, message: Message):
     # Get user preference (season, quality, both, or episode batch)
     message_type = await db.get_user_preference(user_id)
 
+    previous_season = None
+    previous_quality = None
+
     if message_type == 'episode batch':
         # Handle "episode batch" option
         episodes = {}
@@ -658,7 +661,9 @@ async def sequence_dump(client, message: Message):
             if end_msg:
                 await send_custom_message(client, dump_channel, end_msg, items[-1], items[0], items[-1])
 
-        elif message_type == 'season':
+    elif message_type == 'season':
+        for index, item in enumerate(queue):
+            current_season = item['season']
             if previous_season is not None and previous_season != current_season:
                 end_msg = await db.get_end_message(user_id)
                 if end_msg:
@@ -671,7 +676,9 @@ async def sequence_dump(client, message: Message):
 
             previous_season = current_season
 
-        elif message_type == 'quality':
+    elif message_type == 'quality':
+        for index, item in enumerate(queue):
+            current_quality = item['quality']
             if previous_quality is not None and previous_quality != current_quality:
                 end_msg = await db.get_end_message(user_id)
                 if end_msg:
@@ -684,15 +691,19 @@ async def sequence_dump(client, message: Message):
 
             previous_quality = current_quality
 
-        elif message_type == 'both':
-            # Handle both season and quality changes
+    elif message_type == 'both':
+        # Handle both season and quality changes
+        for index, item in enumerate(queue):
+            current_season = item['season']
+            current_quality = item['quality']
             if (previous_season is not None and previous_season != current_season) or \
                (previous_quality is not None and previous_quality != current_quality):
                 end_msg = await db.get_end_message(user_id)
                 if end_msg:
                     await send_custom_message(client, dump_channel, end_msg, item, queue[0], queue[index - 1])
 
-            if previous_season is None or previous_season != current_season or previous_quality is None or previous_quality != current_quality:
+            if previous_season is None or previous_season != current_season or \
+               previous_quality is None or previous_quality != current_quality:
                 start_msg = await db.get_start_message(user_id)
                 if start_msg:
                     await send_custom_message(client, dump_channel, start_msg, item, queue[0])
@@ -700,13 +711,15 @@ async def sequence_dump(client, message: Message):
             previous_season = current_season
             previous_quality = current_quality
 
-        # Send the file
-        if not send_method:
-            failed_files.append(f"Unsupported media type: {item['file_name']} ({item['file_type']})")
-            continue
-
+    # Send the file
+    send_method = send_methods.get(item['file_type'])
+    if not send_method:
+        failed_files.append(f"Unsupported media type: {item['file_name']} ({item['file_type']})")
+    else:
         try:
             await send_file_with_retry(send_method, dump_channel, item)
+            processed_files += 1
+            await notify_progress(status_message, total_files, processed_files)
         except Exception as e:
             failed_files.append(f"Failed to send file: {item['file_name']} (Error: {e})")
 
@@ -724,4 +737,17 @@ async def sequence_dump(client, message: Message):
         await message.reply_text(f"Files sent, but some failed:\n" + "\n".join(failed_files))
     else:
         await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
-        
+
+
+@Client.on_message(filters.command("cleardump") & filters.private)
+async def clear_sequence_dump(client, message: Message):
+    user_id = message.from_user.id
+
+    user_queue = await db.get_user_sequence_queue(user_id)
+    if user_queue:
+        sequence_notified[user_id] = False
+        await db.clear_user_sequence_queue(user_id)
+        await message.reply_text("Your sequence dump has been successfully cleared.")
+    else:
+        await message.reply_text("You don't have any files in your sequence dump.")
+
