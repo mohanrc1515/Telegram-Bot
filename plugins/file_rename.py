@@ -742,7 +742,7 @@ async def sequence_dump(client, message: Message):
                 if end_msg:
                     await send_custom_message(client, dump_channel, end_msg, files[-1])
             
-            episodes.clear()  # This should be safe now, as `episode` is a dictionary
+            episodes[user_id] = False  # This should be safe now, as `episode` is a dictionary
     
         # Send the file
         if not send_method:
