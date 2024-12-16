@@ -670,7 +670,7 @@ async def sequence_dump(client, message: Message):
                         await send_custom_message(client, dump_channel, start_msg, files[0])
 
                     for file in files:
-                    send_method = send_methods.get(file['file_type'])
+                        send_method = send_methods.get(file['file_type'])
                         if not send_method:
                             failed_files.append(f"Unsupported media type: {file['file_name']} ({file['file_type']})")
                             continue
