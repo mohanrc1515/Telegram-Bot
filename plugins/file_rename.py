@@ -23,7 +23,8 @@ user_sequence_mode = {}
 sequence_notified = {}
 thumbnail_extraction_mode = {}
 user_files = {}
-file_count = {}  
+file_count = {}
+episodes = {}
 user_task_queues = {}
 user_semaphores = {}
 
@@ -63,6 +64,8 @@ async def send_custom_message(client, dump_channel, message_data, current_item, 
     message_text = message_data.get('text', '').replace("{quality}", current_item['quality'])
     message_text = message_text.replace("{title}", extract_title(current_item['file_name']))
     message_text = message_text.replace("{season}", str(current_item.get('season', '')))
+    message_text = message_text.replace("{episode}", str(current_item.get('episode', '')))
+    
     
     if first_item:
         message_text = message_text.replace("{firstepisode}", str(first_item.get('episode', '')))
@@ -680,7 +683,6 @@ async def sequence_dump(client, message: Message):
             
         elif message_type == 'episodebatch':
             # Group files by episode
-            episodes = {}
             for item in queue:
                 key = (item['season'], item['episode'])  # Grouping by season and episode
                 if key not in episodes:
