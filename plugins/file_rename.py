@@ -577,6 +577,20 @@ async def handle_files(client: Client, message: Message):
             await process_task(user_id, task)
             user_queue.task_done()
 
+@Client.on_message(filters.command("cleardump") & filters.private)
+async def clear_sequence_dump(client, message: Message):
+    user_id = message.from_user.id
+
+    user_queue = await db.get_user_sequence_queue(user_id)
+    if user_queue:
+        sequence_notified[user_id] = False
+        await db.clear_user_sequence_queue(user_id)
+        await message.reply_text("Your sequence dump has been successfully cleared.")
+    else:
+        await message.reply_text("You don't have any files in your sequence dump.")
+
+
+
 # Define the priority for each quality
 quality_priority = {
     "480p": 1,
@@ -630,7 +644,7 @@ async def sequence_dump(client, message: Message):
     previous_quality = None
 
     # Get user preference (season or quality or both) from the DB
-    message_type = await db.get_user_preference(user_id)  # Retrieve from DB
+    message_type = await db.get_user_preference(user_id)
 
     for index, item in enumerate(queue):
         current_season = item['season']
@@ -652,47 +666,43 @@ async def sequence_dump(client, message: Message):
             previous_season = current_season
 
         elif message_type == 'quality':
-                # Group files by quality
-                quality_groups = {}
-                for item in queue:
-                    quality = item['quality']
-                    if quality not in quality_groups:
-                        quality_groups[quality] = []
-                    quality_groups[quality].append(item)
+            # Group files by quality
+            quality_groups = {}
+            for item in queue:
+                quality = item['quality']
+                if quality not in quality_groups:
+                    quality_groups[quality] = []
+                quality_groups[quality].append(item)
 
-                # Send files by quality priority
-                for quality in sorted(quality_groups.keys(), key=lambda q: quality_priority.get(q, float('inf'))):
-                    files = quality_groups[quality]
+            for quality in sorted(quality_groups.keys(), key=lambda q: quality_priority.get(q, float('inf'))):
+                files = quality_groups[quality]
 
-                    # Send start message for the quality group
-                    start_msg = await db.get_start_message(user_id)
-                    if start_msg:
-                        await send_custom_message(client, dump_channel, start_msg, files[0])
+                # Send start message for the quality group
+                start_msg = await db.get_start_message(user_id)
+                if start_msg:
+                    await send_custom_message(client, dump_channel, start_msg, files[0])
 
-                    for file in files:
-                        send_method = send_methods.get(file['file_type'])
-                        if not send_method:
-                            failed_files.append(f"Unsupported media type: {file['file_name']} ({file['file_type']})")
-                            continue
+                for file in files:
+                    send_method = send_methods.get(file['file_type'])
+                    if not send_method:
+                        failed_files.append(f"Unsupported media type: {file['file_name']} ({file['file_type']})")
+                        continue
 
-                        try:
-                            await send_file_with_retry(send_method, dump_channel, file)
-                        except Exception as e:
-                            failed_files.append(f"Failed to send file: {file['file_name']} (Error: {e})")
+                    try:
+                        await send_file_with_retry(send_method, dump_channel, file)
+                    except Exception as e:
+                        failed_files.append(f"Failed to send file: {file['file_name']} (Error: {e})")
 
-                    # Send end message for the quality group
-                    end_msg = await db.get_end_message(user_id)
-                    if end_msg:
-                        await send_custom_message(client, dump_channel, end_msg, files[-1])
+                end_msg = await db.get_end_message(user_id)
+                if end_msg:
+                    await send_custom_message(client, dump_channel, end_msg, files[-1])
 
-            # Send final end message if needed
             if previous_quality is not None:
                 end_msg = await db.get_end_message(user_id)
                 if end_msg:
                     await send_custom_message(client, dump_channel, end_msg, queue[-1], queue[0], queue[-1])
 
         elif message_type == 'both':
-            # Handle both season and quality changes
             if (previous_season is not None and previous_season != current_season) or \
                (previous_quality is not None and previous_quality != current_quality):
                 end_msg = await db.get_end_message(user_id)
@@ -706,26 +716,22 @@ async def sequence_dump(client, message: Message):
 
             previous_season = current_season
             previous_quality = current_quality
-            
+
         elif message_type == 'episodebatch':
-            # Group files by episode
-            episodes = {}  # Ensure `episodes` is initialized here
+            episodes = {}
             for item in queue:
-                key = (item['season'], item['episode'])  # Grouping by season and episode
+                key = (item['season'], item['episode'])
                 if key not in episodes:
                     episodes[key] = []
                 episodes[key].append(item)
 
             for (season, episode), files in sorted(episodes.items()):
-                # Sort the files of the same episode by quality
                 files.sort(key=lambda x: quality_priority.get(x['quality'], float('inf')))
 
-                # Send start message for this episode group
                 start_msg = await db.get_start_message(user_id)
                 if start_msg:
                     await send_custom_message(client, dump_channel, start_msg, files[0])
 
-                # Send all files for the current episode
                 for file in files:
                     send_method = send_methods.get(file['file_type'])
                     if not send_method:
@@ -737,14 +743,12 @@ async def sequence_dump(client, message: Message):
                     except Exception as e:
                         failed_files.append(f"Failed to send file: {file['file_name']} (Error: {e})")
 
-                # Send end message for this episode group
                 end_msg = await db.get_end_message(user_id)
                 if end_msg:
                     await send_custom_message(client, dump_channel, end_msg, files[-1])
-            
-            episodes[user_id] = False  # This should be safe now, as `episode` is a dictionary
-    
-        # Send the file
+
+            episodes[user_id] = False
+
         if not send_method:
             failed_files.append(f"Unsupported media type: {item['file_name']} ({item['file_type']})")
             continue
@@ -754,7 +758,6 @@ async def sequence_dump(client, message: Message):
         except Exception as e:
             failed_files.append(f"Failed to send file: {item['file_name']} (Error: {e})")
 
-    # Send final end message if needed
     if previous_season is not None or previous_quality is not None:
         end_msg = await db.get_end_message(user_id)
         if end_msg:
@@ -768,17 +771,4 @@ async def sequence_dump(client, message: Message):
         await message.reply_text(f"Files sent, but some failed:\n" + "\n".join(failed_files))
     else:
         await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
-
-
-@Client.on_message(filters.command("cleardump") & filters.private)
-async def clear_sequence_dump(client, message: Message):
-    user_id = message.from_user.id
-
-    user_queue = await db.get_user_sequence_queue(user_id)
-    if user_queue:
-        sequence_notified[user_id] = False
-        await db.clear_user_sequence_queue(user_id)
-        await message.reply_text("Your sequence dump has been successfully cleared.")
-    else:
-        await message.reply_text("You don't have any files in your sequence dump.")
-
+        
