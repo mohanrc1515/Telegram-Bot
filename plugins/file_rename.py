@@ -24,7 +24,6 @@ sequence_notified = {}
 thumbnail_extraction_mode = {}
 user_files = {}
 file_count = {}
-episodes = {}
 user_task_queues = {}
 user_semaphores = {}
 
@@ -596,6 +595,9 @@ async def sequence_dump(client, message: Message):
     if not queue:
         return await message.reply_text("No files found in your sequence queue.")
 
+    # Initialize `episode` as a dictionary to store user-specific data
+    episode = {}
+
     # Extract metadata and sort the queue
     for item in queue:
         file_name = item['file_name']
@@ -683,6 +685,7 @@ async def sequence_dump(client, message: Message):
             
         elif message_type == 'episodebatch':
             # Group files by episode
+            episodes = {}  # Ensure `episodes` is initialized here
             for item in queue:
                 key = (item['season'], item['episode'])  # Grouping by season and episode
                 if key not in episodes:
@@ -714,7 +717,8 @@ async def sequence_dump(client, message: Message):
                 end_msg = await db.get_end_message(user_id)
                 if end_msg:
                     await send_custom_message(client, dump_channel, end_msg, files[-1])
-            del episode[user_id]
+            
+            episode[user_id] = False  # This should be safe now, as `episode` is a dictionary
     
         # Send the file
         if not send_method:
@@ -740,6 +744,7 @@ async def sequence_dump(client, message: Message):
         await message.reply_text(f"Files sent, but some failed:\n" + "\n".join(failed_files))
     else:
         await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
+
 
 @Client.on_message(filters.command("cleardump") & filters.private)
 async def clear_sequence_dump(client, message: Message):
