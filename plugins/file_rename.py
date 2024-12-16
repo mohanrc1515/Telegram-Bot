@@ -595,9 +595,6 @@ async def sequence_dump(client, message: Message):
     if not queue:
         return await message.reply_text("No files found in your sequence queue.")
 
-    # Initialize `episode` as a dictionary to store user-specific data
-    episode = {}
-
     # Extract metadata and sort the queue
     for item in queue:
         file_name = item['file_name']
@@ -718,7 +715,7 @@ async def sequence_dump(client, message: Message):
                 if end_msg:
                     await send_custom_message(client, dump_channel, end_msg, files[-1])
             
-            episode[user_id] = False  # This should be safe now, as `episode` is a dictionary
+            del episode[file_id]  # This should be safe now, as `episode` is a dictionary
     
         # Send the file
         if not send_method:
