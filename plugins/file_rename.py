@@ -714,7 +714,7 @@ async def sequence_dump(client, message: Message):
                 end_msg = await db.get_end_message(user_id)
                 if end_msg:
                     await send_custom_message(client, dump_channel, end_msg, files[-1])
-            episode[user_id] = False
+            del episode[user_id]
     
         # Send the file
         if not send_method:
