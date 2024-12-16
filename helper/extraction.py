@@ -90,7 +90,20 @@ def extract_title(filename):
     filename = re.sub(r'\bS\d+\s*E\d+\b', '', filename)
     
     # Remove quality patterns like 1080p, 720p, 4K, etc.
-    quality_patterns = [r'\b\d{3,4}[^\dp]*p\b', r'\b4k\b', r'\b2k\b', r'\b8k\b', r'\bHQ\b', r'\bHD\b', r'\bFHD\b', r'\bUHD\b']
+    quality_patterns = [
+        r'\b\d{3,4}[^\dp]*p\b', 
+        r'\b4k\b', 
+        r'\b2k\b', 
+        r'\b8k\b', 
+        r'\bHQ\b', 
+        r'\bHD\b', 
+        r'\bFHD\b', 
+        r'\bUHD\b', 
+        r'\bHDrip\b', 
+        r'\bHDRIP\b', 
+        r'\bHDRip\b', 
+        r'\bhdrip\b'
+    ]
     for pattern in quality_patterns:
         filename = re.sub(pattern, '', filename, flags=re.IGNORECASE)
     
