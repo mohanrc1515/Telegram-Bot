@@ -84,6 +84,13 @@ async def send_custom_message(client, dump_channel, message_data, current_item, 
     except Exception as e:
         print(f"Failed to send message: {e}")
         
+async def notify_progress(message, total, completed):
+    """
+    Notify the user about the current progress.
+    """
+    if completed % 10 == 0 or completed == total:
+        await message.edit(f"Processing files: {completed}/{total} completed...")
+        
 
 # Start sequencing command
 @Client.on_message(filters.command("startsequence") & filters.private)
