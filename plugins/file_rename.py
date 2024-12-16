@@ -587,9 +587,6 @@ quality_priority = {
 
 @Client.on_message(filters.command("sequencedump") & filters.private)
 async def sequence_dump(client, message: Message):
-    """
-    Main function to send files in sequence based on user preferences (season, quality, both, or episode batch).
-    """
     user_id = message.from_user.id
     queue = await db.get_user_sequence_queue(user_id)
 
@@ -605,10 +602,11 @@ async def sequence_dump(client, message: Message):
         item['volume'] = int(extract_volume_number(file_name) or 0)
         item['quality'] = extract_quality(file_name) or '0'
 
+    # Sorting by season, episode, volume, chapter, then quality
     queue.sort(key=lambda x: (
+        quality_priority.get(x['quality'], float('inf')),
         x['season'],
         x['episode'],
-        quality_priority.get(x['quality'], float('inf')),
         x['volume'],
         x['chapter']
     ))
@@ -626,51 +624,19 @@ async def sequence_dump(client, message: Message):
     }
 
     failed_files = []
-    total_files = len(queue)
-    processed_files = 0
-
-    # Get user preference (season, quality, both, or episode batch)
-    message_type = await db.get_user_preference(user_id)
-
     previous_season = None
     previous_quality = None
 
-    if message_type == 'episode batch':
-        # Handle "episode batch" option
-        episodes = {}
-        for item in queue:
-            episode = item['episode']
-            if episode not in episodes:
-                episodes[episode] = []
-            episodes[episode].append(item)
+    # Get user preference (season or quality or both) from the DB
+    message_type = await db.get_user_preference(user_id)  # Retrieve from DB
 
-        for episode, items in episodes.items():
-            # Send start message
-            start_msg = await db.get_start_message(user_id)
-            if start_msg:
-                await send_custom_message(client, dump_channel, start_msg, items[0], items[0])
+    for index, item in enumerate(queue):
+        current_season = item['season']
+        current_quality = item['quality']
+        send_method = send_methods.get(item['file_type'])
 
-            # Send all qualities for the episode
-            for item in items:
-                send_method = send_methods.get(item['file_type'])
-                if not send_method:
-                    failed_files.append(f"Unsupported media type: {item['file_name']} ({item['file_type']})")
-                    continue
-                try:
-                    await send_file_with_retry(send_method, dump_channel, item)
-                    processed_files += 1
-                    await notify_progress(status_message, total_files, processed_files)
-                except Exception as e:
-                    failed_files.append(f"Failed to send file: {item['file_name']} (Error: {e})")
-
-            # Send end message
-            end_msg = await db.get_end_message(user_id)
-            if end_msg:
-                await send_custom_message(client, dump_channel, end_msg, items[-1], items[0], items[-1])
-
-    elif message_type == 'season':
-        for index, item in enumerate(queue):
-            current_season = item['season']
+        # Handle season or quality changes based on user preference
+        if message_type == 'season':
             if previous_season is not None and previous_season != current_season:
                 end_msg = await db.get_end_message(user_id)
                 if end_msg:
@@ -683,9 +649,7 @@ async def sequence_dump(client, message: Message):
 
             previous_season = current_season
 
-    elif message_type == 'quality':
-        for index, item in enumerate(queue):
-            current_quality = item['quality']
+        elif message_type == 'quality':
             if previous_quality is not None and previous_quality != current_quality:
                 end_msg = await db.get_end_message(user_id)
                 if end_msg:
@@ -698,35 +662,63 @@ async def sequence_dump(client, message: Message):
 
             previous_quality = current_quality
 
-    elif message_type == 'both':
-        # Handle both season and quality changes
-        for index, item in enumerate(queue):
-            current_season = item['season']
-            current_quality = item['quality']
+        elif message_type == 'both':
+            # Handle both season and quality changes
             if (previous_season is not None and previous_season != current_season) or \
                (previous_quality is not None and previous_quality != current_quality):
                 end_msg = await db.get_end_message(user_id)
                 if end_msg:
                     await send_custom_message(client, dump_channel, end_msg, item, queue[0], queue[index - 1])
 
-            if previous_season is None or previous_season != current_season or \
-               previous_quality is None or previous_quality != current_quality:
+            if previous_season is None or previous_season != current_season or previous_quality is None or previous_quality != current_quality:
                 start_msg = await db.get_start_message(user_id)
                 if start_msg:
                     await send_custom_message(client, dump_channel, start_msg, item, queue[0])
 
             previous_season = current_season
             previous_quality = current_quality
+            
+        elif message_type == 'episodebatch':
+            # Group files by episode
+            episodes = {}
+            for item in queue:
+                key = (item['season'], item['episode'])  # Grouping by season and episode
+                if key not in episodes:
+                    episodes[key] = []
+                episodes[key].append(item)
 
-    # Send the file
-    send_method = send_methods.get(item['file_type'])
-    if not send_method:
-        failed_files.append(f"Unsupported media type: {item['file_name']} ({item['file_type']})")
-    else:
+            for (season, episode), files in sorted(episodes.items()):
+                # Sort the files of the same episode by quality
+                files.sort(key=lambda x: quality_priority.get(x['quality'], float('inf')))
+
+                # Send start message for this episode group
+                start_msg = await db.get_start_message(user_id)
+                if start_msg:
+                    await send_custom_message(client, dump_channel, start_msg, files[0])
+
+                # Send all files for the current episode
+                for file in files:
+                    send_method = send_methods.get(file['file_type'])
+                    if not send_method:
+                        failed_files.append(f"Unsupported media type: {file['file_name']} ({file['file_type']})")
+                        continue
+
+                    try:
+                        await send_file_with_retry(send_method, dump_channel, file)
+                    except Exception as e:
+                        failed_files.append(f"Failed to send file: {file['file_name']} (Error: {e})")
+
+                # Send end message for this episode group
+                end_msg = await db.get_end_message(user_id)
+                if end_msg:
+                    await send_custom_message(client, dump_channel, end_msg, files[-1])
+        # Send the file
+        if not send_method:
+            failed_files.append(f"Unsupported media type: {item['file_name']} ({item['file_type']})")
+            continue
+
         try:
             await send_file_with_retry(send_method, dump_channel, item)
-            processed_files += 1
-            await notify_progress(status_message, total_files, processed_files)
         except Exception as e:
             failed_files.append(f"Failed to send file: {item['file_name']} (Error: {e})")
 
@@ -744,7 +736,6 @@ async def sequence_dump(client, message: Message):
         await message.reply_text(f"Files sent, but some failed:\n" + "\n".join(failed_files))
     else:
         await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
-
 
 @Client.on_message(filters.command("cleardump") & filters.private)
 async def clear_sequence_dump(client, message: Message):
