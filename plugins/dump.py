@@ -312,9 +312,10 @@ async def dumptextmode(client, message: Message):
     button_season = InlineKeyboardButton(f"Season ✅" if current_preference == 'season' else "Season", callback_data="season")
     button_quality = InlineKeyboardButton(f"Quality ✅" if current_preference == 'quality' else "Quality", callback_data="quality")
     button_both = InlineKeyboardButton(f"Both ✅" if current_preference == 'both' else "Both", callback_data="both")
+    button_episode_batch = InlineKeyboardButton(f"Episode Batch ✅" if current_preference == 'episode_batch' else "Episode Batch", callback_data="episode_batch")
 
     # Create the buttons layout
-    buttons = InlineKeyboardMarkup([[button_season, button_quality, button_both]])
+    buttons = InlineKeyboardMarkup([[button_season, button_quality], [button_both, button_episode_batch]])
 
     # Send a message with the buttons
     await message.reply_text(
@@ -322,7 +323,8 @@ async def dumptextmode(client, message: Message):
         reply_markup=buttons
     )
 
-@Client.on_callback_query(filters.regex('^(season|quality|both)$'))
+
+@Client.on_callback_query(filters.regex('^(season|quality|both|episode_batch)$'))
 async def handle_switch_callback(client, callback_query):
     user_id = callback_query.from_user.id
     selected_mode = callback_query.data
@@ -337,9 +339,10 @@ async def handle_switch_callback(client, callback_query):
     button_season = InlineKeyboardButton(f"Season ✅" if current_preference == 'season' else "Season", callback_data="season")
     button_quality = InlineKeyboardButton(f"Quality ✅" if current_preference == 'quality' else "Quality", callback_data="quality")
     button_both = InlineKeyboardButton(f"Both ✅" if current_preference == 'both' else "Both", callback_data="both")
+    button_episode_batch = InlineKeyboardButton(f"Episode Batch ✅" if current_preference == 'episode_batch' else "Episode Batch", callback_data="episode_batch")
 
     # Create the updated button layout
-    buttons = InlineKeyboardMarkup([[button_season, button_quality, button_both]])
+    buttons = InlineKeyboardMarkup([[button_season, button_quality], [button_both, button_episode_batch]])
 
     # Edit the original message with the updated buttons
     await callback_query.message.edit_text(
@@ -348,4 +351,4 @@ async def handle_switch_callback(client, callback_query):
     )
 
     # Acknowledge the callback query
-    await callback_query.answer(f"Switched to {selected_mode} mode!")
+    await callback_query.answer(f"Switched to {selected_mode.replace('_', ' ').title()} mode!")
