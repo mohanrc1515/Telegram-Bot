@@ -244,9 +244,7 @@ async def end_dump(client, message: Message):
             "you want to set as the end message for dumping. Use the placeholders:\n\n"
             "- **{quality}**: Content quality (e.g., 1080p)\n"
             "- **{title}**: Series title\n"
-            "- **{season}**: Season number\n"
-            "- **{firstepisode}**: First episode\n"
-            "- **{lastepisode}**: Last episode"
+            "- **{season}**: Season number"
         )
         return
 
@@ -255,13 +253,13 @@ async def end_dump(client, message: Message):
         if replied.sticker:
             caption = replied.text if replied.text else ""  # Stickers have no caption, use text if available
             await db.set_end_message(user_id, sticker_id=replied.sticker.file_id, text=caption)
-            await message.reply_text("Start message set with a sticker.")
+            await message.reply_text("End message set with a sticker.")
         elif replied.photo:
             await db.set_end_message(user_id, image_id=replied.photo.file_id, text=replied.caption or "")
-            await message.reply_text("Start message set with an image.")
+            await message.reply_text("End message set with an image.")
         elif replied.text:
             await db.set_end_message(user_id, text=replied.text)
-            await message.reply_text(f"Start message set:\n{replied.text}")
+            await message.reply_text(f"End message set:\n{replied.text}")
         else:
             await message.reply_text("Invalid format. Please reply to a text, image, or sticker.")
     except Exception as e:
