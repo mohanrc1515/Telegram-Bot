@@ -760,6 +760,38 @@ async def sequence_dump(client, message: Message):
             if end_msg:
                 await send_custom_message(client, dump_channel, end_msg, files[-1])
 
+   elif message_type == "custombatch":
+        batch_size = await db.get_user_dumpbatch(user_id)
+        if not batch_size:
+            return await message.reply_text("Batch size not set. Use /dumpbatch number to set batch size.")
+
+        # Divide the queue into batches
+        for i in range(0, len(queue), batch_size):
+            batch = queue[i:i + batch_size]
+            start_msg = await db.get_start_message(user_id)
+            end_msg = await db.get_end_message(user_id)
+
+            # Send the start message
+            if start_msg:
+                await send_custom_message(client, dump_channel, start_msg, batch[0], first_item)
+
+            # Send each file in the batch
+            for file in batch:
+                send_method = send_methods.get(file['file_type'])
+                if not send_method:
+                    failed_files.append(f"Unsupported media type: {file['file_name']} ({file['file_type']})")
+                    continue
+
+                try:
+                    await send_file_with_retry(send_method, dump_channel, file)
+                except Exception as e:
+                    failed_files.append(f"Failed to send file: {file['file_name']} (Error: {e})")
+
+            # Send the end message
+            if end_msg:
+                await send_custom_message(client, dump_channel, end_msg, batch[-1], last_item)
+    
+    sequence_notified[user_id] = False
     await db.clear_user_sequence_queue(user_id)
     await status_message.delete()
 
