@@ -577,20 +577,6 @@ async def handle_files(client: Client, message: Message):
             await process_task(user_id, task)
             user_queue.task_done()
 
-@Client.on_message(filters.command("cleardump") & filters.private)
-async def clear_sequence_dump(client, message: Message):
-    user_id = message.from_user.id
-
-    user_queue = await db.get_user_sequence_queue(user_id)
-    if user_queue:
-        sequence_notified[user_id] = False
-        await db.clear_user_sequence_queue(user_id)
-        await message.reply_text("Your sequence dump has been successfully cleared.")
-    else:
-        await message.reply_text("You don't have any files in your sequence dump.")
-
-
-
 # Define the priority for each quality
 quality_priority = {
     "480p": 1,
@@ -618,7 +604,7 @@ async def sequence_dump(client, message: Message):
         item['volume'] = int(extract_volume_number(file_name) or 0)
         item['quality'] = extract_quality(file_name) or '0'
 
-    # Sorting by season, episode, volume, chapter, then quality
+    # Sorting by quality priority, then season, episode, volume, and chapter
     queue.sort(key=lambda x: (
         quality_priority.get(x['quality'], float('inf')),
         x['season'],
@@ -643,16 +629,14 @@ async def sequence_dump(client, message: Message):
     previous_season = None
     previous_quality = None
 
-    # Get user preference (season or quality or both) from the DB
+    # Get user preference (season, quality, both, or episode batch)
     message_type = await db.get_user_preference(user_id)
 
-    for index, item in enumerate(queue):
-        current_season = item['season']
-        current_quality = item['quality']
-        send_method = send_methods.get(item['file_type'])
+    if message_type == "season":
+        for index, item in enumerate(queue):
+            current_season = item['season']
+            send_method = send_methods.get(item['file_type'])
 
-        # Handle season or quality changes based on user preference
-        if message_type == 'season':
             if previous_season is not None and previous_season != current_season:
                 end_msg = await db.get_end_message(user_id)
                 if end_msg:
@@ -665,51 +649,58 @@ async def sequence_dump(client, message: Message):
 
             previous_season = current_season
 
-        elif message_type == 'quality':
-            # Group files by quality
-            quality_groups = {}
-            for item in queue:
-                quality = item['quality']
-                if quality not in quality_groups:
-                    quality_groups[quality] = []
-                quality_groups[quality].append(item)
+            if not send_method:
+                failed_files.append(f"Unsupported media type: {item['file_name']} ({item['file_type']})")
+                continue
 
-            for quality in sorted(quality_groups.keys(), key=lambda q: quality_priority.get(q, float('inf'))):
-                files = quality_groups[quality]
+            try:
+                await send_file_with_retry(send_method, dump_channel, item)
+            except Exception as e:
+                failed_files.append(f"Failed to send file: {item['file_name']} (Error: {e})")
 
-                # Send start message for the quality group
-                start_msg = await db.get_start_message(user_id)
-                if start_msg:
-                    await send_custom_message(client, dump_channel, start_msg, files[0])
+    elif message_type == "quality":
+        quality_groups = {}
+        for item in queue:
+            quality = item['quality']
+            if quality not in quality_groups:
+                quality_groups[quality] = []
+            quality_groups[quality].append(item)
 
-                for file in files:
-                    send_method = send_methods.get(file['file_type'])
-                    if not send_method:
-                        failed_files.append(f"Unsupported media type: {file['file_name']} ({file['file_type']})")
-                        continue
+        for quality in sorted(quality_groups.keys(), key=lambda q: quality_priority.get(q, float('inf'))):
+            files = quality_groups[quality]
+            start_msg = await db.get_start_message(user_id)
+            if start_msg:
+                await send_custom_message(client, dump_channel, start_msg, files[0])
 
-                    try:
-                        await send_file_with_retry(send_method, dump_channel, file)
-                    except Exception as e:
-                        failed_files.append(f"Failed to send file: {file['file_name']} (Error: {e})")
+            for file in files:
+                send_method = send_methods.get(file['file_type'])
+                if not send_method:
+                    failed_files.append(f"Unsupported media type: {file['file_name']} ({file['file_type']})")
+                    continue
 
-                end_msg = await db.get_end_message(user_id)
-                if end_msg:
-                    await send_custom_message(client, dump_channel, end_msg, files[-1])
+                try:
+                    await send_file_with_retry(send_method, dump_channel, file)
+                except Exception as e:
+                    failed_files.append(f"Failed to send file: {file['file_name']} (Error: {e})")
 
-            if previous_quality is not None:
-                end_msg = await db.get_end_message(user_id)
-                if end_msg:
-                    await send_custom_message(client, dump_channel, end_msg, queue[-1], queue[0], queue[-1])
+            end_msg = await db.get_end_message(user_id)
+            if end_msg:
+                await send_custom_message(client, dump_channel, end_msg, files[-1])
 
-        elif message_type == 'both':
+    elif message_type == "both":
+        for index, item in enumerate(queue):
+            current_season = item['season']
+            current_quality = item['quality']
+            send_method = send_methods.get(item['file_type'])
+
             if (previous_season is not None and previous_season != current_season) or \
                (previous_quality is not None and previous_quality != current_quality):
                 end_msg = await db.get_end_message(user_id)
                 if end_msg:
                     await send_custom_message(client, dump_channel, end_msg, item, queue[0], queue[index - 1])
 
-            if previous_season is None or previous_season != current_season or previous_quality is None or previous_quality != current_quality:
+            if previous_season is None or previous_season != current_season or \
+               previous_quality is None or previous_quality != current_quality:
                 start_msg = await db.get_start_message(user_id)
                 if start_msg:
                     await send_custom_message(client, dump_channel, start_msg, item, queue[0])
@@ -717,53 +708,44 @@ async def sequence_dump(client, message: Message):
             previous_season = current_season
             previous_quality = current_quality
 
-        elif message_type == 'episodebatch':
-            episodes = {}
-            for item in queue:
-                key = (item['season'], item['episode'])
-                if key not in episodes:
-                    episodes[key] = []
-                episodes[key].append(item)
+            if not send_method:
+                failed_files.append(f"Unsupported media type: {item['file_name']} ({item['file_type']})")
+                continue
 
-            for (season, episode), files in sorted(episodes.items()):
-                files.sort(key=lambda x: quality_priority.get(x['quality'], float('inf')))
+            try:
+                await send_file_with_retry(send_method, dump_channel, item)
+            except Exception as e:
+                failed_files.append(f"Failed to send file: {item['file_name']} (Error: {e})")
 
-                start_msg = await db.get_start_message(user_id)
-                if start_msg:
-                    await send_custom_message(client, dump_channel, start_msg, files[0])
+    elif message_type == "episodebatch":
+        episodes = {}
+        for item in queue:
+            key = (item['season'], item['episode'])
+            if key not in episodes:
+                episodes[key] = []
+            episodes[key].append(item)
 
-                for file in files:
-                    send_method = send_methods.get(file['file_type'])
-                    if not send_method:
-                        failed_files.append(f"Unsupported media type: {file['file_name']} ({file['file_type']})")
-                        continue
+        for (season, episode), files in sorted(episodes.items()):
+            files.sort(key=lambda x: quality_priority.get(x['quality'], float('inf')))
+            start_msg = await db.get_start_message(user_id)
+            if start_msg:
+                await send_custom_message(client, dump_channel, start_msg, files[0])
 
-                    try:
-                        await send_file_with_retry(send_method, dump_channel, file)
-                    except Exception as e:
-                        failed_files.append(f"Failed to send file: {file['file_name']} (Error: {e})")
+            for file in files:
+                send_method = send_methods.get(file['file_type'])
+                if not send_method:
+                    failed_files.append(f"Unsupported media type: {file['file_name']} ({file['file_type']})")
+                    continue
 
-                end_msg = await db.get_end_message(user_id)
-                if end_msg:
-                    await send_custom_message(client, dump_channel, end_msg, files[-1])
+                try:
+                    await send_file_with_retry(send_method, dump_channel, file)
+                except Exception as e:
+                    failed_files.append(f"Failed to send file: {file['file_name']} (Error: {e})")
 
-            episodes[user_id] = False
+            end_msg = await db.get_end_message(user_id)
+            if end_msg:
+                await send_custom_message(client, dump_channel, end_msg, files[-1])
 
-        if not send_method:
-            failed_files.append(f"Unsupported media type: {item['file_name']} ({item['file_type']})")
-            continue
-
-        try:
-            await send_file_with_retry(send_method, dump_channel, item)
-        except Exception as e:
-            failed_files.append(f"Failed to send file: {item['file_name']} (Error: {e})")
-
-    if previous_season is not None or previous_quality is not None:
-        end_msg = await db.get_end_message(user_id)
-        if end_msg:
-            await send_custom_message(client, dump_channel, end_msg, queue[-1], queue[0], queue[-1])
-
-    sequence_notified[user_id] = False
     await db.clear_user_sequence_queue(user_id)
     await status_message.delete()
 
@@ -772,3 +754,4 @@ async def sequence_dump(client, message: Message):
     else:
         await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
         
+                        
