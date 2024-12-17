@@ -94,6 +94,20 @@ async def notify_progress(message, total, completed):
         await message.edit(f"Processing files: {completed}/{total} completed...")
         
 
+@Client.on_message(filters.command("cleardump") & filters.private)
+async def clear_sequence_dump(client, message: Message):
+    user_id = message.from_user.id
+
+    user_queue = await db.get_user_sequence_queue(user_id)
+    if user_queue:
+        sequence_notified[user_id] = False
+        await db.clear_user_sequence_queue(user_id)
+        await message.reply_text("Your sequence dump has been successfully cleared.")
+    else:
+        await message.reply_text("You don't have any files in your sequence dump.")
+
+
+
 # Start sequencing command
 @Client.on_message(filters.command("startsequence") & filters.private)
 async def start_sequence(client, message: Message):
