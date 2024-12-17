@@ -301,6 +301,24 @@ async def show_dump_text(client, message: Message):
     await message.reply_text(response_text)
 
 
+@Client.on_message(filters.command("setbatch") & filters.private)
+async def set_batch_size(client, message: Message):
+    user_id = message.from_user.id
+    try:
+        _, size = message.text.split()
+        batch_size = int(size)
+
+        if batch_size < 1:
+            return await message.reply_text("Batch size must be at least 1.")
+
+        # Save batch size to the database
+        await db.set_user_dumpbatch(user_id, batch_size)
+        await message.reply_text(f"Custom batch size successfully set to {batch_size}.")
+    except ValueError:
+        await message.reply_text("Invalid command format. Use /setbatch <number>.")
+        
+
+
 @Client.on_message(filters.command("dumptextmode"))
 async def dumptextmode(client, message: Message):
     user_id = message.from_user.id
