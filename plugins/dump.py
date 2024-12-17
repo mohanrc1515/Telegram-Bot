@@ -305,17 +305,26 @@ async def show_dump_text(client, message: Message):
 async def dumptextmode(client, message: Message):
     user_id = message.from_user.id
 
-    # Retrieve current user preference from the database
+    # Retrieve current user preference and batch size from the database
     current_preference = await db.get_user_preference(user_id)  # Assume 'db' handles DB operations
+    custom_batch_size = await db.get_user_dumpbatch(user_id)
+
+    # Format the custom batch button label
+    custom_batch_label = f"Custom Batch ({custom_batch_size})" if custom_batch_size else "Custom Batch (Not Set)"
 
     # Define the button labels and callback data
     button_season = InlineKeyboardButton(f"Season ✅" if current_preference == 'season' else "Season", callback_data="season")
     button_quality = InlineKeyboardButton(f"Quality ✅" if current_preference == 'quality' else "Quality", callback_data="quality")
     button_both = InlineKeyboardButton(f"Both ✅" if current_preference == 'both' else "Both", callback_data="both")
     button_episode_batch = InlineKeyboardButton(f"Episode Batch ✅" if current_preference == 'episodebatch' else "Episode Batch", callback_data="episodebatch")
+    button_custom_batch = InlineKeyboardButton(f"{custom_batch_label} ✅" if current_preference == 'custombatch' else custom_batch_label, callback_data="custombatch")
 
     # Create the buttons layout
-    buttons = InlineKeyboardMarkup([[button_season, button_quality], [button_both, button_episode_batch]])
+    buttons = InlineKeyboardMarkup([
+        [button_season, button_quality],
+        [button_both, button_episode_batch],
+        [button_custom_batch]
+    ])
 
     # Send a message with the buttons
     await message.reply_text(
@@ -324,7 +333,7 @@ async def dumptextmode(client, message: Message):
     )
 
 
-@Client.on_callback_query(filters.regex('^(season|quality|both|episodebatch)$'))
+@Client.on_callback_query(filters.regex('^(season|quality|both|episodebatch|custombatch)$'))
 async def handle_switch_callback(client, callback_query):
     user_id = callback_query.from_user.id
     selected_mode = callback_query.data
@@ -332,17 +341,26 @@ async def handle_switch_callback(client, callback_query):
     # Update the user's preference in the database
     await db.set_user_preference(user_id, selected_mode)
 
-    # Retrieve the updated preference to re-render buttons
+    # Retrieve the updated preference and custom batch size
     current_preference = await db.get_user_preference(user_id)
+    custom_batch_size = await db.get_user_dumpbatch(user_id)
+
+    # Format the custom batch button label
+    custom_batch_label = f"Custom Batch ({custom_batch_size})" if custom_batch_size else "Custom Batch (Not Set)"
 
     # Update buttons based on the selected mode
     button_season = InlineKeyboardButton(f"Season ✅" if current_preference == 'season' else "Season", callback_data="season")
     button_quality = InlineKeyboardButton(f"Quality ✅" if current_preference == 'quality' else "Quality", callback_data="quality")
     button_both = InlineKeyboardButton(f"Both ✅" if current_preference == 'both' else "Both", callback_data="both")
     button_episode_batch = InlineKeyboardButton(f"Episode Batch ✅" if current_preference == 'episodebatch' else "Episode Batch", callback_data="episodebatch")
+    button_custom_batch = InlineKeyboardButton(f"{custom_batch_label} ✅" if current_preference == 'custombatch' else custom_batch_label, callback_data="custombatch")
 
     # Create the updated button layout
-    buttons = InlineKeyboardMarkup([[button_season, button_quality], [button_both, button_episode_batch]])
+    buttons = InlineKeyboardMarkup([
+        [button_season, button_quality],
+        [button_both, button_episode_batch],
+        [button_custom_batch]
+    ])
 
     # Edit the original message with the updated buttons
     await callback_query.message.edit_text(
