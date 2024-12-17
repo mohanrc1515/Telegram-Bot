@@ -760,7 +760,7 @@ async def sequence_dump(client, message: Message):
             if end_msg:
                 await send_custom_message(client, dump_channel, end_msg, files[-1])
 
-   elif message_type == "custombatch":
+    elif message_type == "custombatch":
         batch_size = await db.get_user_dumpbatch(user_id)
         if not batch_size:
             return await message.reply_text("Batch size not set. Use /dumpbatch number to set batch size.")
