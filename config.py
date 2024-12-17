@@ -206,12 +206,11 @@ Get Premium: Enhance your file renaming capabilities and enjoy the full potentia
 - You can also use placeholders:  
  - `{quality}` = Quality (e.g., 1080p)  
  - `{title}` = Series title  
- - `{season}` = Season number  
- - `{firstepisode}` = First episode of the season  
- - `{lastepisode}` = Last episode of the season
+ - `{season}` = Season number 
   
 • **Example:**  
-`✨ Season {season}: Ep {firstepisode}-{lastepisode} | {quality}`  
+`✧ Title : {title}
+✧ Season : {season} | {quality}`  
 
 2. **/enddump** : Same as `/startdump` but for the **end message**.
 
@@ -221,8 +220,8 @@ Get Premium: Enhance your file renaming capabilities and enjoy the full potentia
 
 5. **/showdumptext** : View your current dump messages status.  
 
-6. **/dumptextmode** : Set when to show messages: **Season**, **Quality**, or **Both**.
+6. **/dumptextmode** : Set when to show messages: **Season**, **Quality**, **Both**, **Episode Batch**, **Custom Dump**.
    
-This determines whether you want to include dump messages before and after quality changes, season changes, or both. Use it and you'll understand what I mean."""
+This determines whether you want to include dump messages before and after quality changes, season changes, or both, or you want them as bunch on same episode in multiple quality or after custom batch means after every 50 or 20 ot whatever you choose the number of files. Use it and you'll understand what I mean."""
 
 
