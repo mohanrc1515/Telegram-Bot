@@ -10,38 +10,43 @@ from pyrogram.errors import FloodWait
 async def progress_for_pyrogram(current, total, ud_type, message, start):
     now = time.time()
     diff = now - start
-    if round(diff % 5.00) == 0 or current == total:
-        percentage = current * 100 / total
-        speed = current / diff if diff > 0 else 0
-        elapsed_time = round(diff) * 1000
-        time_to_completion = round((total - current) / speed) * 1000 if speed > 0 else 0
-        estimated_total_time = elapsed_time + time_to_completion
+    percentage = current * 100 / total
+    speed = current / diff if diff > 0 else 0
+    elapsed_time = round(diff) * 1000
+    time_to_completion = round((total - current) / speed) * 1000 if speed > 0 else 0
+    estimated_total_time = elapsed_time + time_to_completion
 
-        elapsed_time = TimeFormatter(milliseconds=elapsed_time)
-        estimated_total_time = TimeFormatter(milliseconds=estimated_total_time)
+    elapsed_time = TimeFormatter(milliseconds=elapsed_time)
+    estimated_total_time = TimeFormatter(milliseconds=estimated_total_time)
 
-        progress = "{0}{1}".format(
-            ''.join(["■" for _ in range(math.floor(percentage / 5))]),
-            ''.join(["□" for _ in range(20 - math.floor(percentage / 5))])
-        )
-        tmp = progress + Txt.PROGRESS_BAR.format(
-            round(percentage, 2),
-            humanbytes(current),
-            humanbytes(total),
-            humanbytes(speed),
-            estimated_total_time if estimated_total_time != '' else "0 s"
-        )
+    progress = "{0}{1}".format(
+        ''.join(["■" for _ in range(math.floor(percentage / 5))]),
+        ''.join(["□" for _ in range(20 - math.floor(percentage / 5))])
+    )
+    tmp = progress + Txt.PROGRESS_BAR.format(
+        round(percentage, 2),
+        humanbytes(current),
+        humanbytes(total),
+        humanbytes(speed),
+        estimated_total_time if estimated_total_time != '' else "0 s"
+    )
 
+    # Keep track of the last edit time
+    if not hasattr(progress_for_pyrogram, "last_edit"):
+        progress_for_pyrogram.last_edit = 0
+
+    # Only update every 5% or at completion
+    if percentage == 100 or time.time() - progress_for_pyrogram.last_edit >= 5:
         try:
             await message.edit(text=f"{ud_type}\n\n{tmp}")
+            progress_for_pyrogram.last_edit = time.time()
         except FloodWait as e:
-            # If flood wait occurs, wait for the time specified in the exception
             print(f"Flood wait for {e.value} seconds")
-            await asyncio.sleep(e.value)  # Sleep for the required time and retry
-            # Retry the edit after waiting
+            await asyncio.sleep(e.value)
             await message.edit(text=f"{ud_type}\n\n{tmp}")
         except Exception as e:
             print(f"Error editing message: {e}")
+
 
 
 def humanbytes(size):
