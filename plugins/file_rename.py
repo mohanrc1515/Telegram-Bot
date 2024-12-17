@@ -684,7 +684,7 @@ async def sequence_dump(client, message: Message):
             files = quality_groups[quality]
             start_msg = await db.get_start_message(user_id)
             if start_msg:
-                await send_custom_message(client, dump_channel, start_msg, files[0])
+                await send_custom_message(client, dump_channel, start_msg, files[0], first_item)
 
             for file in files:
                 send_method = send_methods.get(file['file_type'])
@@ -699,7 +699,7 @@ async def sequence_dump(client, message: Message):
 
             end_msg = await db.get_end_message(user_id)
             if end_msg:
-                await send_custom_message(client, dump_channel, end_msg, files[-1])
+                await send_custom_message(client, dump_channel, end_msg, files[-1], last_item)
 
     elif message_type == "both":
         for index, item in enumerate(queue):
