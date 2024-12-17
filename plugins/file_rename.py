@@ -58,42 +58,6 @@ async def send_file_with_retry(send_method, dump_channel, item):
         await asyncio.sleep(e.value)
         await send_file_with_retry(send_method, dump_channel, item)
 
-async def send_custom_message(client, dump_channel, message_data, current_item, first_item=None, last_item=None):
-    # Replace placeholders in the message text
-    message_text = message_data.get('text', '').replace("{quality}", current_item['quality'])
-    message_text = message_text.replace("{title}", extract_title(current_item['file_name']))
-    message_text = message_text.replace("{season}", str(current_item.get('season', '')))
-    message_text = message_text.replace("{episode}", str(current_item.get('episode', '')))
-    
-    
-    if first_item:
-        message_text = message_text.replace("{firstepisode}", str(first_item.get('episode', '')))
-    if last_item:
-        message_text = message_text.replace("{lastepisode}", str(last_item.get('episode', '')))
-
-    # Retrieve optional sticker or image IDs
-    sticker_id = message_data.get('sticker_id')
-    image_id = message_data.get('image_id')
-
-    # Send the appropriate type of message
-    try:
-        if sticker_id:
-            await client.send_sticker(dump_channel, sticker_id)
-        elif image_id:
-            await client.send_photo(dump_channel, image_id, caption=message_text)
-        else:
-            await client.send_message(dump_channel, message_text)
-    except Exception as e:
-        print(f"Failed to send message: {e}")
-        
-async def notify_progress(message, total, completed):
-    """
-    Notify the user about the current progress.
-    """
-    if completed % 10 == 0 or completed == total:
-        await message.edit(f"Processing files: {completed}/{total} completed...")
-        
-
 @Client.on_message(filters.command("cleardump") & filters.private)
 async def clear_sequence_dump(client, message: Message):
     user_id = message.from_user.id
@@ -601,6 +565,35 @@ quality_priority = {
     "8k": 6
 }
 
+async def send_custom_message(client, dump_channel, message_data, current_item, first_item=None, last_item=None):
+    # Replace placeholders in the message text
+    message_text = message_data.get('text', '').replace("{quality}", current_item['quality'])
+    message_text = message_text.replace("{title}", extract_title(current_item['file_name']))
+    message_text = message_text.replace("{season}", str(current_item.get('season', '')))
+    message_text = message_text.replace("{episode}", str(current_item.get('episode', '')))
+    
+    # Add firstepisode and lastepisode placeholders
+    if first_item:
+        message_text = message_text.replace("{firstepisode}", str(first_item.get('episode', '')))
+    if last_item:
+        message_text = message_text.replace("{lastepisode}", str(last_item.get('episode', '')))
+    
+    # Retrieve optional sticker or image IDs
+    sticker_id = message_data.get('sticker_id')
+    image_id = message_data.get('image_id')
+
+    # Send the appropriate type of message
+    try:
+        if sticker_id:
+            await client.send_sticker(dump_channel, sticker_id)
+        elif image_id:
+            await client.send_photo(dump_channel, image_id, caption=message_text)
+        else:
+            await client.send_message(dump_channel, message_text)
+    except Exception as e:
+        print(f"Failed to send message: {e}")
+        
+        
 @Client.on_message(filters.command("sequencedump") & filters.private)
 async def sequence_dump(client, message: Message):
     user_id = message.from_user.id
@@ -654,11 +647,13 @@ async def sequence_dump(client, message: Message):
             if previous_season is not None and previous_season != current_season:
                 end_msg = await db.get_end_message(user_id)
                 if end_msg:
+                    # Add firstepisode and lastepisode placeholders for season changes
                     await send_custom_message(client, dump_channel, end_msg, item, queue[0], queue[index - 1])
 
             if previous_season is None or previous_season != current_season:
                 start_msg = await db.get_start_message(user_id)
                 if start_msg:
+                    # Add firstepisode placeholder for the first file in the season
                     await send_custom_message(client, dump_channel, start_msg, item, queue[0])
 
             previous_season = current_season
@@ -684,6 +679,7 @@ async def sequence_dump(client, message: Message):
             files = quality_groups[quality]
             start_msg = await db.get_start_message(user_id)
             if start_msg:
+                # Add firstepisode placeholder for the first file in the quality group
                 await send_custom_message(client, dump_channel, start_msg, files[0])
 
             for file in files:
@@ -699,7 +695,8 @@ async def sequence_dump(client, message: Message):
 
             end_msg = await db.get_end_message(user_id)
             if end_msg:
-                await send_custom_message(client, dump_channel, end_msg, files[-1])
+                # Add lastepisode placeholder for the last file in the quality group
+                await send_custom_message(client, dump_channel, end_msg, files[-1], files[0], files[-1])
 
     elif message_type == "both":
         for index, item in enumerate(queue):
@@ -711,12 +708,14 @@ async def sequence_dump(client, message: Message):
                (previous_quality is not None and previous_quality != current_quality):
                 end_msg = await db.get_end_message(user_id)
                 if end_msg:
+                    # Add firstepisode and lastepisode placeholders for both season and quality changes
                     await send_custom_message(client, dump_channel, end_msg, item, queue[0], queue[index - 1])
 
             if previous_season is None or previous_season != current_season or \
                previous_quality is None or previous_quality != current_quality:
                 start_msg = await db.get_start_message(user_id)
                 if start_msg:
+                    # Add firstepisode placeholder for the first file in both season and quality group
                     await send_custom_message(client, dump_channel, start_msg, item, queue[0])
 
             previous_season = current_season
@@ -743,6 +742,7 @@ async def sequence_dump(client, message: Message):
             files.sort(key=lambda x: quality_priority.get(x['quality'], float('inf')))
             start_msg = await db.get_start_message(user_id)
             if start_msg:
+                # Add firstepisode placeholder for the first file in the episode batch
                 await send_custom_message(client, dump_channel, start_msg, files[0])
 
             for file in files:
@@ -758,7 +758,8 @@ async def sequence_dump(client, message: Message):
 
             end_msg = await db.get_end_message(user_id)
             if end_msg:
-                await send_custom_message(client, dump_channel, end_msg, files[-1])
+                # Add lastepisode placeholder for the last file in the episode batch
+                await send_custom_message(client, dump_channel, end_msg, files[-1], files[0], files[-1])
 
     elif message_type == "custombatch":
         batch_size = await db.get_user_dumpbatch(user_id)
@@ -773,6 +774,7 @@ async def sequence_dump(client, message: Message):
 
             # Send the start message
             if start_msg:
+                # Add firstepisode placeholder for the first file in the batch
                 await send_custom_message(client, dump_channel, start_msg, batch[0])
 
             # Send each file in the batch
@@ -789,7 +791,8 @@ async def sequence_dump(client, message: Message):
 
             # Send the end message
             if end_msg:
-                await send_custom_message(client, dump_channel, end_msg, batch[-1])
+                # Add lastepisode placeholder for the last file in the batch
+                await send_custom_message(client, dump_channel, end_msg, batch[-1], batch[0], batch[-1])
     
     sequence_notified[user_id] = False
     await db.clear_user_sequence_queue(user_id)
@@ -800,4 +803,3 @@ async def sequence_dump(client, message: Message):
     else:
         await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
         
-                        
