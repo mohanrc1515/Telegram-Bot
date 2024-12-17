@@ -416,7 +416,7 @@ class Database:
     # User preference handling
     async def get_user_preference(self, user_id):
         user_data = await self.user_col.find_one({'_id': int(user_id)})
-        return user_data.get('message_mode', 'season')  # Default to 'season'
+        return user_data.get('message_mode', 'season')
 
     # Function to set user preference in DB
     async def set_user_preference(self, user_id, mode):
@@ -426,6 +426,12 @@ class Database:
             upsert=True
 	)
                	    
+    # User Dump Batch Management
+    async def set_user_dumpbatch(self, id, dump_batch):
+        await self.set_user_attr(id, "dump_batch", dump_batch)
+
+    async def get_user_dumpbatch(self, id):
+        return await self.get_user_attr(id, "dump_batch", None)
 				  
     async def get_db_size(self):
         return (await self.db.command("dbstats"))['dataSize']
