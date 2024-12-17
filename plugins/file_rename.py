@@ -395,7 +395,7 @@ async def handle_files(client: Client, message: Message):
             img.resize((320, 320))
             img.save(ph_path, "JPEG")
             logs_caption2 = f"{firstname}\n{user_id}\n{new_file_name}"
-            await client.send_document(Config.FILES_CHANNEL, document=file_path, caption=logs_caption2)
+         #   await client.send_document(Config.FILES_CHANNEL, document=file_path, caption=logs_caption2)
             
         dump_settings = {
             'dump_files': await db.get_dump_files(user_id),
