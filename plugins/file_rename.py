@@ -684,7 +684,7 @@ async def sequence_dump(client, message: Message):
             files = quality_groups[quality]
             start_msg = await db.get_start_message(user_id)
             if start_msg:
-                await send_custom_message(client, dump_channel, start_msg, files[0], first_item)
+                await send_custom_message(client, dump_channel, start_msg, files[0])
 
             for file in files:
                 send_method = send_methods.get(file['file_type'])
@@ -699,7 +699,7 @@ async def sequence_dump(client, message: Message):
 
             end_msg = await db.get_end_message(user_id)
             if end_msg:
-                await send_custom_message(client, dump_channel, end_msg, files[-1], last_item)
+                await send_custom_message(client, dump_channel, end_msg, files[-1])
 
     elif message_type == "both":
         for index, item in enumerate(queue):
@@ -763,7 +763,7 @@ async def sequence_dump(client, message: Message):
     elif message_type == "custombatch":
         batch_size = await db.get_user_dumpbatch(user_id)
         if not batch_size:
-            return await message.reply_text("Batch size not set. Use /dumpbatch number to set batch size.")
+            return await message.reply_text("Batch size not set. Use /setbatch number to set batch size.")
 
         # Divide the queue into batches
         for i in range(0, len(queue), batch_size):
@@ -773,7 +773,7 @@ async def sequence_dump(client, message: Message):
 
             # Send the start message
             if start_msg:
-                await send_custom_message(client, dump_channel, start_msg, batch[0], first_item)
+                await send_custom_message(client, dump_channel, start_msg, batch[0])
 
             # Send each file in the batch
             for file in batch:
@@ -789,7 +789,7 @@ async def sequence_dump(client, message: Message):
 
             # Send the end message
             if end_msg:
-                await send_custom_message(client, dump_channel, end_msg, batch[-1], last_item)
+                await send_custom_message(client, dump_channel, end_msg, batch[-1])
     
     sequence_notified[user_id] = False
     await db.clear_user_sequence_queue(user_id)
