@@ -36,7 +36,7 @@ def get_user_queue(user_id):
 # Function to get or create the semaphore for each user
 def get_user_semaphore(user_id):
     if user_id not in user_semaphores:
-        user_semaphores[user_id] = Semaphore(4)
+        user_semaphores[user_id] = Semaphore(5)
     return user_semaphores[user_id]
 
 async def process_task(user_id, task):
@@ -213,19 +213,7 @@ async def handle_files(client: Client, message: Message):
 
     if not format_template:
         return await message.reply_text("Please Set An Auto Rename Format First Using /autorename")    
-        
-    # Initialize user_files and file_count if not present
-    if user_id not in user_files:
-        user_files[user_id] = []
-    if user_id not in file_count:
-        file_count[user_id] = await db.get_file_count(user_id)  # Fetch from DB
 
-    # Update file count
-    file_count[user_id] += 1
-    await db.update_file_count(user_id, file_count[user_id])
-    
-    user_files[user_id].append(message)
-    
     file = message.document or message.video or message.audio
     if not file:
         await message.reply_text("Unsupported File Type.", quote=True)
@@ -284,7 +272,7 @@ async def handle_files(client: Client, message: Message):
         )
    
     async def task():
-        await asyncio.sleep(1)
+        await asyncio.sleep(2)
         await download_msg.edit("Processing... ⚡")
         try:
             path = await client.download_media(
