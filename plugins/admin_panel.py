@@ -1,6 +1,6 @@
 from config import Config, Txt
 from helper.database import db
-import psutil
+import psutil, time, os
 from helper.utils import get_size
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 from pyrogram import Client, filters
@@ -61,7 +61,7 @@ async def get_stats(bot: Client, message: Message):
             f"**👥 Total Users:** `{total_users}`\n"
             f"**📦 Storage Used:** `{size}`\n"
             f"**📂 Storage Free:** `{free}`\n\n"
-            f"**-- System RAM Stats --**\n"
+            f"**-- System RAM Stats --**\n\n"
             f"**💾 Total RAM:** `{total_ram}`\n"
             f"**📊 Used RAM:** `{used_ram}` ({ram_percentage}%)\n"
             f"**📂 Free RAM:** `{free_ram}`\n"
