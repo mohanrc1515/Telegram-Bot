@@ -18,6 +18,7 @@ import asyncio
 import pytz
 
 renaming_operations = {}
+thumbnail_extraction_mode
 sequence_notified = {}
 user_files = {}
 user_task_queues = {}
@@ -45,6 +46,44 @@ async def process_task(user_id, task):
         finally:
             await asyncio.sleep(5)
     
+@Client.on_message(filters.command("cancel") & filters.private)
+async def cancel_queue(client, message: Message):
+    user_id = message.from_user.id
+
+    user_queue = get_user_queue(user_id)
+    while not user_queue.empty():
+        await user_queue.get()
+        user_queue.task_done()
+
+    # Reset semaphore to unlock ongoing tasks
+    user_semaphore = get_user_semaphore(user_id)
+    while user_semaphore.locked():
+        user_semaphore.release()
+
+    # Remove user-related data from dictionaries
+    if user_id in renaming_operations:
+        del renaming_operations[user_id]
+    if user_id in sequence_notified:
+        del sequence_notified[user_id]
+    if user_id in user_task_queues:
+        del user_task_queues[user_id]
+    if user_id in user_semaphores:
+        del user_semaphores[user_id]
+    if user_id in thumbnail_extraction_mode:
+        del thumbnail_extraction_mode[user_id]
+    if user_id in user_files:
+        del user_files[user_id]
+    
+    if await db.is_thumbnail_extraction_mode(user_id):
+        await db.set_thumbnail_extraction_mode(user_id, False)
+     
+    if await db.is_user_sequence_mode(user_id):
+        await db.set_user_sequence_mode(user_id, False)
+
+    await db.clear_user_sequence_queue(user_id)
+    await db.clear_sequence_queue(user_id)
+    await message.reply_text("All tasks have been canceled !!")
+
 @Client.on_message(filters.command("queue") & filters.private)
 async def show_queue(client, message: Message):
     user_id = message.from_user.id
@@ -56,7 +95,20 @@ async def show_queue(client, message: Message):
     else:
         await message.reply_text("Your renaming queue is empty.")
         
+@Client.on_message(filters.command("getthumb") & filters.private)
+async def get_thumbnail(client, message: Message):
+    user_id = message.from_user.id
 
+    if not await db.is_user_authorized(user_id):
+        await message.reply_text(Config.USER_REPLY)
+        return    
+        
+    if thumbnail_extraction_mode.get(user_id, False):
+        await message.reply_text("You are already in thumbnail extraction mode. Please send the file to extract the thumbnail.")
+    else:
+        thumbnail_extraction_mode[user_id] = True
+        await message.reply_text("Please send the file from which you want to extract the thumbnail.")
+        
 # Handle file uploads and renaming
 @Client.on_message(filters.private & (filters.document | filters.video | filters.audio))
 async def handle_files(client: Client, message: Message):
@@ -105,8 +157,28 @@ async def handle_files(client: Client, message: Message):
             await message.reply_text("File name could not be determined.")
         return
         
-    if await db.is_thumbnail_extraction_mode(user_id):
-        return    
+    if user_id in thumbnail_extraction_mode and thumbnail_extraction_mode[user_id]:
+        file = message.document or message.video or message.audio
+        if not file:
+            await message.reply_text("Unsupported File Type")
+            return
+
+        thumb_id = None
+        if message.video and message.video.thumbs:
+            thumb_id = message.video.thumbs[0].file_id
+        elif message.document and message.document.thumbs:
+            thumb_id = message.document.thumbs[0].file_id
+        if thumb_id:
+            thumb_path = await client.download_media(thumb_id)
+            try:
+                await client.send_photo(message.chat.id, thumb_path, caption="Here is the thumbnail you requested.")
+            finally:
+                if os.path.exists(thumb_path):
+                    os.remove(thumb_path)
+            del thumbnail_extraction_mode[user_id]
+        else:
+            await message.reply_text("No thumbnail available for this file.")
+        return
         
     if not format_template:
         return await message.reply_text("Please Set An Auto Rename Format First Using /autorename")    
@@ -405,42 +477,7 @@ async def handle_files(client: Client, message: Message):
             task = await user_queue.get()
             await process_task(user_id, task)
             user_queue.task_done()
-
-@Client.on_message(filters.command("cancel") & filters.private)
-async def cancel_queue(client, message: Message):
-    user_id = message.from_user.id
-
-    user_queue = get_user_queue(user_id)
-    while not user_queue.empty():
-        await user_queue.get()
-        user_queue.task_done()
-
-    # Reset semaphore to unlock ongoing tasks
-    user_semaphore = get_user_semaphore(user_id)
-    while user_semaphore.locked():
-        user_semaphore.release()
-
-    # Remove user-related data from dictionaries
-    if user_id in renaming_operations:
-        del renaming_operations[user_id]
-    if user_id in sequence_notified:
-        del sequence_notified[user_id]
-    if user_id in user_task_queues:
-        del user_task_queues[user_id]
-    if user_id in user_semaphores:
-        del user_semaphores[user_id]
     
-    if await db.is_thumbnail_extraction_mode(user_id):
-        await db.set_thumbnail_extraction_mode(user_id, False)
-     
-    if await db.is_user_sequence_mode(user_id):
-        await db.set_user_sequence_mode(user_id, False)
-
-    await db.clear_user_sequence_queue(user_id)
-    await db.clear_sequence_queue(user_id)
-    await message.reply_text("All tasks have been canceled !!")
-    
-
 # Define the priority for each quality
 quality_priority = {
     "480p": 1,
