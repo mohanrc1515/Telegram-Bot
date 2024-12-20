@@ -28,7 +28,7 @@ async def features_command(client, message):
 ➤ **Refer & Gain Authentication**  
 ➤ **Custom Thumbnail & Caption**
 
-```For any advice text us : @Elites_Assistance```""",
+<blockquote>For any advice text us : @Elites_Assistance</blockquote>""",
         reply_markup=InlineKeyboardMarkup([
             [
                 InlineKeyboardButton("🎥 Autorename", callback_data="auto_rename"),
@@ -66,7 +66,7 @@ async def features_callback(client, query: CallbackQuery):
 ➤ **Refer & Gain Authentication**  
 ➤ **Custom Thumbnail & Caption**
 
-```For any advice text us : @Elites_Assistance```""",
+<blockquote>For any advice text us : @Elites_Assistance<blockquote>""",
         reply_markup=InlineKeyboardMarkup([
             [
                 InlineKeyboardButton("🎥 Autorename", callback_data="auto_rename"),
