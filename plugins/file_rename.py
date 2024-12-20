@@ -66,7 +66,13 @@ async def handle_files(client: Client, message: Message):
     
     if not await db.is_user_authorized(user_id):
         await message.reply_text(Config.USER_REPLY)
-        return        
+        return
+        
+    if await db.is_user_sequence_mode(user_id):
+        return
+        
+    if await db.is_thumbnail_extraction_mode(user_id):
+        return    
         
     if not format_template:
         return await message.reply_text("Please Set An Auto Rename Format First Using /autorename")    
