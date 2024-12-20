@@ -17,18 +17,7 @@ DUMP_MESSAGE_CALLBACK = "dump_message"
 async def features_command(client, message):
     await message.reply_photo(
         photo="https://graph.org/file/304a4a1c70aa0c520e956.jpg",
-        caption="""
-⚡ <u>**Welcome to our Feature Showcase !**</u> ⚡ 
-
-➤ **Autorename Feature**  
-➤ **Metadata Editing**
-➤ **Files Dumping**
-➤ **Custom Message Before & After Dump**
-➤ **Files Sequencing**
-➤ **Refer & Gain Authentication**  
-➤ **Custom Thumbnail & Caption**
-
-<blockquote>For any advice text us : @Elites_Assistance</blockquote>""",
+        caption=Txt.FEATURES_TXT,
         parse_mode=enums.ParseMode.HTML,
         reply_markup=InlineKeyboardMarkup([
             [
@@ -47,7 +36,7 @@ async def features_command(client, message):
                 InlineKeyboardButton("📤 Dump", callback_data="dump"),
                 InlineKeyboardButton("📬 Dump Text", callback_data="dump_message")
             ],
-            [        
+            [
                 InlineKeyboardButton("🔄 Back to Menu", callback_data="commands"),
             ]
         ])
@@ -56,18 +45,7 @@ async def features_command(client, message):
 @Client.on_callback_query(filters.regex("features"))
 async def features_callback(client, query: CallbackQuery):
     await query.message.edit_text(
-        text="""
-⚡ <u>**Welcome to our Feature Showcase !**</u> ⚡ 
-
-➤ **Autorename Feature**  
-➤ **Metadata Editing**
-➤ **Files Dumping**
-➤ **Custom Message Before & After Dump**
-➤ **Files Sequencing**
-➤ **Refer & Gain Authentication**  
-➤ **Custom Thumbnail & Caption**
-
-<blockquote>For any advice text us : @Elites_Assistance</blockquote>""",
+        text=Txt.FEATURES_TXT,
         parse_mode=enums.ParseMode.HTML,
         reply_markup=InlineKeyboardMarkup([
             [
@@ -86,7 +64,7 @@ async def features_callback(client, query: CallbackQuery):
                 InlineKeyboardButton("📤 Dump", callback_data="dump"),
                 InlineKeyboardButton("📬 Dump Text", callback_data="dump_message")
             ],
-            [        
+            [
                 InlineKeyboardButton("🔄 Back to Menu", callback_data="commands"),
             ]
         ])
