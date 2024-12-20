@@ -237,7 +237,7 @@ async def handle_files(client: Client, message: Message):
             elif caption_mode == "strikethrough":
                 caption = f"~~{caption}~~"
             elif caption_mode == "quote":
-                caption = f"```{caption}```"
+                caption = f"<blockquote>{caption}</blockquote>"
             elif caption_mode == "mono":
                 caption = f"`{caption}`"
             elif caption_mode == "spoiler":
@@ -438,8 +438,6 @@ async def cancel_queue(client, message: Message):
 
     await db.clear_user_sequence_queue(user_id)
     await db.clear_sequence_queue(user_id)
-    await download_msg.delete()    
-    await upload_msg.delete()    
     await message.reply_text("All tasks have been canceled !!")
     
 
