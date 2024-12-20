@@ -58,43 +58,4 @@ async def end_sequence(client, message: Message):
 
     await message.reply_text(f"Sequencing completed. Sent {len(queue)} files.")
     await db.clear_sequence_queue(user_id)
-
-# Handle received files during sequencing
-@Client.on_message(filters.private & (filters.document | filters.video | filters.audio))
-async def handle_file(client, message: Message):
-    user_id = message.from_user.id
-
-    if await db.is_user_sequence_mode(user_id):
-        file_name = None
-        if message.document:
-            file_name = message.document.file_name
-        elif message.video:
-            file_name = message.video.file_name
-        elif message.audio:
-            file_name = message.audio.file_name
-
-        if file_name:
-            season = extract_season(file_name) or 0
-            episode = extract_episode_number(file_name) or 0
-            volume = extract_volume_number(file_name) or 0
-            chapter = extract_chapter_number(file_name) or 0
-
-            if episode or chapter:
-                file_id = (
-                    message.document.file_id if message.document else 
-                    (message.video.file_id if message.video else message.audio.file_id)
-                )
-                await db.add_to_sequence_queue(user_id, {
-                    'file_id': file_id,
-                    'file_name': file_name,
-                    'season': int(season),
-                    'episode': int(episode),
-                    'volume': int(volume),
-                    'chapter': int(chapter),
-                    'file_type': 'document' if message.document else ('video' if message.video else 'audio')
-                })
-                await message.reply_text("The file has been successfully received and integrated into the sequencing.")
-            else:
-                await message.reply_text(f"Could not extract sufficient information from '{file_name}'. File was not added to the queue.")
-        else:
-            await message.reply_text("File name could not be determined.")
+    
