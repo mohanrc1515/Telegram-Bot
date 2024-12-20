@@ -131,22 +131,35 @@ async def list_auth_users(client: Client, message: Message):
 @Client.on_message(filters.command("myplan") & filters.private)
 async def myplan(client: Client, message: Message):
     user_id = message.from_user.id
-    user_name = message.from_user.first_name
     
     # Check if the user is authorized
     if await db.is_user_authorized(user_id):
         expiry_time = await db.get_authorization_expiry(user_id)
         duration_td = expiry_time - datetime.utcnow()
         start_time = expiry_time - duration_td
-        
+
         # Prepare the plan information message
-        myplan_message = (f"**💳 Authorization Details:**\n\n"
-                          f"👤 **User:** {user_mention(message.from_user)}\n"
-                          f"🕒 **Auth Duration:** `{str(duration_td)}`\n"
-                          f"📅 **Auth Start:** `{format_timestamp(start_time)}`\n"
-                          f"⏳ **Auth Expiry:** `{format_timestamp(expiry_time)}`")
-        
-        await message.reply_text(myplan_message)
+        myplan_message = (
+            f"**💳 __Authorization Details__ 💳**\n\n"
+            f"👤 **User:** {user_mention(message.from_user)}\n"
+            f"🕒 **Auth Duration:** `{str(duration_td)}`\n"
+            f"📅 **Auth Start:** `{format_timestamp(start_time)}`\n"
+            f"⏳ **Auth Expiry:** `{format_timestamp(expiry_time)}`\n\n"
+            f"✨ Enjoy your premium features and benefits!"
+        )
+
+        # Close button
+        close_button = InlineKeyboardMarkup([
+            [InlineKeyboardButton("✗ Close ✗", callback_data="close")]
+        ])
+
+        # Send default image with premium details
+        await client.send_photo(
+            chat_id=user_id,
+            photo="https://envs.sh/7S2.jpg",
+            caption=myplan_message,
+            reply_markup=close_button
+        )
     
     # If user is not authorized
     else:
@@ -156,9 +169,15 @@ async def myplan(client: Client, message: Message):
         ])
         
         # Prepare the unauthorized message
-        unauthorized_message = (f"**Hello {user_mention(message.from_user)}!**\n\n"
-                                f"⚠️ You are currently not an authorized user.\n"
-                                f"Unlock premium features and enjoy exclusive benefits! 💼")
+        unauthorized_message = (
+            f"**Hello {user_mention(message.from_user)} !!!**\n\n"
+            f"⚠️ __You are currently not an authorized user.__\n\n"
+            f"💼 **Unlock Premium Features:**\n"
+            f"✨ Better Speed\n"
+            f"✨ Extended support\n"
+            f"✨ Unlimited Renaming\n\n"
+            f"Click the button below to buy premium!"
+        )
         
         # Send message with the "Buy Premium" button
         await message.reply_text(unauthorized_message, reply_markup=buy_premium_button)
