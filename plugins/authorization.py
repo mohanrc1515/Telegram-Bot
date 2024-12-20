@@ -140,12 +140,12 @@ async def myplan(client: Client, message: Message):
 
         # Prepare the plan information message
         myplan_message = (
-            f"**💳 __Authorization Details__ 💳**\n\n"
+            f"**💳 <u>Authorization Details</u> 💳**\n\n"
             f"👤 **User:** {user_mention(message.from_user)}\n"
             f"🕒 **Auth Duration:** `{str(duration_td)}`\n"
             f"📅 **Auth Start:** `{format_timestamp(start_time)}`\n"
             f"⏳ **Auth Expiry:** `{format_timestamp(expiry_time)}`\n\n"
-            f"✨ Enjoy your premium features and benefits!"
+            f"✨ __Enjoy your premium features and benefits!__"
         )
 
         # Close button
