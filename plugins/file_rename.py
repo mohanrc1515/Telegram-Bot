@@ -521,9 +521,53 @@ async def send_custom_message(client, dump_channel, message_data, current_item, 
             await client.send_message(dump_channel, message_text)
     except Exception as e:
         print(f"Failed to send message: {e}")
-        
+
 @Client.on_message(filters.command("sequencedump") & filters.private)
 async def sequence_dump(client, message: Message):
+    user_id = message.from_user.id
+    queue = await db.get_user_sequence_queue(user_id)
+
+    if not queue:
+        return await message.reply_text("No files found in your sequence queue.")
+
+    # Extract metadata and sort the queue
+    for item in queue:
+        file_name = item['file_name']
+        item['season'] = int(extract_season(file_name) or 0)
+        item['episode'] = int(extract_episode_number(file_name) or 0)
+        item['chapter'] = int(extract_chapter_number(file_name) or 0)
+        item['volume'] = int(extract_volume_number(file_name) or 0)
+
+    # Sorting: Prioritize by season, episode, volume, then chapter
+    queue.sort(key=lambda x: (x['season'], x['episode'], x['volume'], x['chapter']))
+
+    dump_channel = await db.get_dump_channel(user_id)
+    if not dump_channel:
+        return await message.reply_text("No dump channel found. Please connect it using /dump.")
+
+    status_message = await message.reply_text("Starting to send files in sequence to channel...")
+    for item in queue:
+        try:
+            if item['file_type'] == 'document':
+                await client.send_document(dump_channel, document=item['file_id'], caption=item['file_name'])
+            elif item['file_type'] == 'video':
+                await client.send_video(dump_channel, video=item['file_id'], caption=item['file_name'])
+            elif item['file_type'] == 'audio':
+                await client.send_audio(dump_channel, audio=item['file_id'], caption=item['file_name'])
+            elif item['file_type'] == 'pdf':
+                await client.send_document(dump_channel, document=item['file_id'], caption=item['file_name'])
+            else:
+                await message.reply_text(f"Unsupported media type: {item['file_type ']}")
+        except Exception as e:
+            await message.reply_text(f"Failed to send file: {item['file_name']}\nError: {e}")
+
+    await db.clear_user_sequence_queue(user_id)
+    await client.delete_messages(chat_id=message.chat.id, message_ids=status_message.id)
+    await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
+    
+        
+@Client.on_message(filters.command("bsnsnanwnsequencedump") & filters.private)
+async def bwbwjwsequence_dump(client, message: Message):
     user_id = message.from_user.id
     queue = await db.get_user_sequence_queue(user_id)
 
