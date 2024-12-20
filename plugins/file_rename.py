@@ -21,7 +21,6 @@ renaming_operations = {}
 sequencing_queue = {}
 user_sequence_mode = {}
 sequence_notified = {}
-thumbnail_extraction_mode = {}
 user_files = {}
 file_count = {}
 user_task_queues = {}
@@ -45,19 +44,6 @@ async def process_task(user_id, task):
         await task()
         await asyncio.sleep(5)
 
-async def send_file_with_retry(send_method, dump_channel, item):
-    try:
-        # Attempt to send the file
-        await send_method(dump_channel, **{
-            item['file_type']: item['file_id'],
-            'caption': item['file_name']
-        })
-    except FloodWait as e:
-        # If FloodWait occurs, wait for the specified time and retry
-        print(f"Flood wait of {e.value} seconds for file {item['file_name']}")
-        await asyncio.sleep(e.value)
-        await send_file_with_retry(send_method, dump_channel, item)
-
 @Client.on_message(filters.command("cleardump") & filters.private)
 async def clear_sequence_dump(client, message: Message):
     user_id = message.from_user.id
@@ -69,68 +55,6 @@ async def clear_sequence_dump(client, message: Message):
         await message.reply_text("Your sequence dump has been successfully cleared.")
     else:
         await message.reply_text("You don't have any files in your sequence dump.")
-
-
-
-# Start sequencing command
-@Client.on_message(filters.command("startsequence") & filters.private)
-async def start_sequence(client, message: Message):
-    user_id = message.from_user.id   
-    if not await db.is_user_authorized(user_id):
-        await message.reply_text(Config.USER_REPLY)
-        return    
-        
-    if user_sequence_mode.get(user_id, False):
-        await message.reply_text("You already started a sequence. Please send files or end it with /endsequence.")
-    else:
-        sequencing_queue[user_id] = []
-        user_sequence_mode[user_id] = True
-        await message.reply_text("Sequence started! Please send the files you want to sequence.")
-        
-@Client.on_message(filters.command("endsequence") & filters.private)
-async def end_sequence(client, message):
-    user_id = message.from_user.id
-    # Check if sequencing is active for the user
-    if user_id not in user_sequence_mode or not user_sequence_mode[user_id]:
-        return await message.reply_text("You have not started sequencing yet. Enter /startsequence to activate sequencing mode.")  
-
-    # Disable sequencing mode
-    user_sequence_mode[user_id] = False
-    queue = sequencing_queue.pop(user_id, [])
-    
-    if not queue:
-        return await message.reply_text("No files were sequenced.")
-    # Sort the files based on volume, season, chapter, and episode
-    queue.sort(key=lambda x: (
-        x.get('volume', 0),    # Prioritize by volume
-        x.get('season', 0),    # Then by season
-        x.get('chapter', 0),   # Then by chapter
-        x.get('episode', 0)    # Finally by episode
-    ))
-    # Send sorted files back to user
-    for item in queue:
-        file_type = item.get('file_type', 'document')
-        file_id = item['file_id']
-        caption = item.get('file_name', 'No name available')
-        if file_type == 'video':
-            await client.send_video(
-                chat_id=message.chat.id,
-                video=file_id,
-                caption=caption
-            )
-        elif file_type == 'audio':
-            await client.send_audio(
-                chat_id=message.chat.id,
-                audio=file_id,
-                caption=caption
-            )
-        else:  # Default to sending as a document
-            await client.send_document(
-                chat_id=message.chat.id,
-                document=file_id,
-                caption=caption
-            )
-    await message.reply_text(f"Sequencing completed. Sent {len(queue)} files.")
 
 # Handle file uploads and renaming
 @Client.on_message(filters.private & (filters.document | filters.video | filters.audio))
@@ -144,36 +68,6 @@ async def handle_files(client: Client, message: Message):
         await message.reply_text(Config.USER_REPLY)
         return        
         
-    if user_id in user_sequence_mode and user_sequence_mode[user_id]:
-        file_name = None
-        if message.document:
-            file_name = message.document.file_name
-        elif message.video:
-            file_name = message.video.file_name
-        elif message.audio:
-            file_name = message.audio.file_name
-        if file_name:
-            season = extract_season(file_name) or 0
-            episode = extract_episode_number(file_name) or 0
-            volume = extract_volume_number(file_name) or 0
-            chapter = extract_chapter_number(file_name) or 0
-
-            if episode or chapter:
-                sequencing_queue[user_id].append({
-                    'file_id': message.document.file_id if message.document else (message.video.file_id if message.video else message.audio.file_id),
-                    'file_name': file_name,
-                    'season': int(season),
-                    'episode': int(episode),
-                    'volume': int(volume),
-                    'chapter': int(chapter)
-                })
-                await message.reply_text("The file has been successfully received and integrated into the sequencing.")
-            else:
-                await message.reply_text(f"Could not extract sufficient information from '{file_name}'. File was not added to the queue.")
-        else:
-            await message.reply_text("File name could not be determined.")
-        return
-
     if not format_template:
         return await message.reply_text("Please Set An Auto Rename Format First Using /autorename")    
 
@@ -753,4 +647,18 @@ async def sequence_dump(client, message: Message):
         await message.reply_text(f"Files sent, but some failed:\n" + "\n".join(failed_files))
     else:
         await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
+
+
+async def send_file_with_retry(send_method, dump_channel, item):
+    try:
+        # Attempt to send the file
+        await send_method(dump_channel, **{
+            item['file_type']: item['file_id'],
+            'caption': item['file_name']
+        })
+    except FloodWait as e:
+        # If FloodWait occurs, wait for the specified time and retry
+        print(f"Flood wait of {e.value} seconds for file {item['file_name']}")
+        await asyncio.sleep(e.value)
+        await send_file_with_retry(send_method, dump_channel, item)
         
