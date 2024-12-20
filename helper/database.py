@@ -468,7 +468,9 @@ class Database:
     async def clear_sequence_queue(self, user_id):
         await self.set_user_attr(user_id, "sequence_queue", [])
             
-        	
+    async def get_user_preference(self, user_id):
+        user = await self.user_col.find_one({"_id": user_id})
+        return user.get("caption_mode", "normal")  # Default to normal        	
 	
     async def get_db_size(self):
         return (await self.db.command("dbstats"))['dataSize']
