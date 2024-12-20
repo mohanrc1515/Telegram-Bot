@@ -433,18 +433,6 @@ class Database:
     async def get_user_dumpbatch(self, id):
         return await self.get_user_attr(id, "dump_batch", None)
 
-    # Thumbnail Extraction Mode
-    async def is_thumbnail_extraction_mode(self, user_id: int) -> bool:
-        user = await self.user_col.find_one({"_id": user_id})
-        return user.get("thumbnail_extraction_mode", False) if user else False
-
-    async def set_thumbnail_extraction_mode(self, user_id: int, mode: bool):
-        await self.user_col.update_one(
-            {"_id": user_id}, 
-            {"$set": {"thumbnail_extraction_mode": mode}}, 
-            upsert=True
-        )
-
      # Sequence Mode 
     async def is_user_sequence_mode(self, user_id):
         return await self.get_user_attr(user_id, "sequence_mode", False)
