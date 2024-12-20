@@ -18,11 +18,8 @@ import asyncio
 import pytz
 
 renaming_operations = {}
-sequencing_queue = {}
-user_sequence_mode = {}
 sequence_notified = {}
 user_files = {}
-file_count = {}
 user_task_queues = {}
 user_semaphores = {}
 
@@ -43,6 +40,55 @@ async def process_task(user_id, task):
     async with semaphore:
         await task()
         await asyncio.sleep(5)
+
+@Client.on_message(filters.command("cancel") & filters.private)
+async def cancel_queue(client, message: Message):
+    user_id = message.from_user.id
+
+    user_queue = get_user_queue(user_id)
+    while not user_queue.empty():
+        await user_queue.get()
+        user_queue.task_done()
+
+    # Reset semaphore to unlock ongoing tasks
+    user_semaphore = get_user_semaphore(user_id)
+    while user_semaphore.locked():
+        user_semaphore.release()
+
+    # Remove user-related data from dictionaries
+    if user_id in renaming_operations:
+        del renaming_operations[user_id]
+    if user_id in sequence_notified:
+        del sequence_notified[user_id]
+    if user_id in user_task_queues:
+        del user_task_queues[user_id]
+    if user_id in user_semaphores:
+        del user_semaphores[user_id]
+    
+    if await db.is_thumbnail_extraction_mode(user_id):
+        await db.set_thumbnail_extraction_mode(user_id, False)
+     
+    if await db.is_user_sequence_mode(user_id):
+        await db.set_user_sequence_mode(user_id, False)
+
+    await db.clear_user_sequence_queue(user_id)
+    await db.clear_sequence_queue(user_id)
+    await download_msg.delete()    
+    await upload_msg.delete()    
+    await message.reply_text("All tasks have been canceled !!")
+    
+    
+@Client.on_message(filters.command("queue") & filters.private)
+async def show_queue(client, message: Message):
+    user_id = message.from_user.id
+    user_queue = get_user_queue(user_id)
+    queue_size = user_queue.qsize()
+
+    if queue_size > 0:
+        await message.reply_text(f"Your renaming queue contains {queue_size} files.")
+    else:
+        await message.reply_text("Your renaming queue is empty.")
+        
 
 # Handle file uploads and renaming
 @Client.on_message(filters.private & (filters.document | filters.video | filters.audio))
