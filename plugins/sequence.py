@@ -3,7 +3,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from config import Config
 from helper.database import db
-from utils.extraction import *
+from helper.extraction import *
 
 # Start sequencing command
 @Client.on_message(filters.command("startsequence") & filters.private)
