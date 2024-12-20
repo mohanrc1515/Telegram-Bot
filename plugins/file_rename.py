@@ -513,7 +513,6 @@ async def send_custom_message(client, dump_channel, message_data, current_item, 
     except Exception as e:
         print(f"Failed to send message: {e}")
         
-        
 @Client.on_message(filters.command("sequencedump") & filters.private)
 async def sequence_dump(client, message: Message):
     user_id = message.from_user.id
@@ -531,7 +530,6 @@ async def sequence_dump(client, message: Message):
         item['volume'] = int(extract_volume_number(file_name) or 0)
         item['quality'] = extract_quality(file_name) or '0'
 
-    # Sorting by quality priority, then season, episode, volume, and chapter
     queue.sort(key=lambda x: (
         quality_priority.get(x['quality'], float('inf')),
         x['season'],
@@ -548,16 +546,46 @@ async def sequence_dump(client, message: Message):
     send_methods = {
         'document': client.send_document,
         'video': client.send_video,
-        'audio': client.send_audio,
-        'pdf': client.send_document
+        'audio': client.send_audio
     }
 
     failed_files = []
-    previous_season = None
-    previous_quality = None
-
-    # Get user preference (season, quality, both, or episode batch)
     message_type = await db.get_user_preference(user_id)
+    c_caption = await db.get_caption(user_id)
+    caption_mode = await db.get_caption_preference(user_id) or "normal"
+
+    async def apply_caption_mode(caption):
+        if caption_mode == "bold":
+            return f"**{caption}**"
+        elif caption_mode == "italic":
+            return f"__{caption}__"
+        elif caption_mode == "underline":
+            return f"<u>{caption}</u>"
+        elif caption_mode == "strikethrough":
+            return f"~~{caption}~~"
+        elif caption_mode == "quote":
+            return f"<blockquote>{caption}</blockquote>"
+        elif caption_mode == "mono":
+            return f"`{caption}`"
+        elif caption_mode == "spoiler":
+            return f"||{caption}||"
+        return caption
+
+    async def generate_caption(item):
+        caption = (
+            c_caption.format(
+                filename=item['file_name'],
+                filesize=humanbytes(item.get('file_size', 0)),
+                duration=convert(item.get('duration', 0)),
+                season=item.get('season', ''),
+                episode=item.get('episode', '')
+            )
+            if c_caption else item['file_name']
+        )
+        return await apply_caption_mode(caption)
+        
+    # Get user preference (season, quality, both, or episode batch)
+    message_type = await db.get_user_preference(user_id)        
 
     if message_type == "season":
         for index, item in enumerate(queue):
@@ -721,8 +749,7 @@ async def sequence_dump(client, message: Message):
     if failed_files:
         await message.reply_text(f"Files sent, but some failed:\n" + "\n".join(failed_files))
     else:
-        await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
-
+        await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")       
 
 async def send_file_with_retry(send_method, dump_channel, item):
     try:
