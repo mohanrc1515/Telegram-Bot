@@ -414,7 +414,7 @@ async def handle_files(client: Client, message: Message):
                         progress_args=("Uploading...", upload_msg, time.time())
                     )
                     
-                await sleep(0.5)
+                await asyncio.sleep(0.5)
                 await upload_msg.edit("File Successfully Dumped")
                 await asyncio.sleep(5)
                 await upload_msg.delete()
