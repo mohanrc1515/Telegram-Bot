@@ -1,5 +1,3 @@
-"""
-
 from pyrogram import Client, filters, enums
 from pyrogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from helper.database import db
@@ -282,5 +280,3 @@ async def handle_edit_var(client, query, variable_name):
         await handle_update_var(client, query, variable_name)
     finally:
         handler_dict[user_id] = False
-
-    """
