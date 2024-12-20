@@ -247,7 +247,7 @@ async def handle_edit_var(client, query, variable_name):
     if current_value:
         text += f"\n\n<b>Current Value :</b> {current_value}\n\n"
 
-    text += "Please Enter The New Value Within 60 Seconds."
+    text += "Please Enter The New Value Within 5 Seconds."
 
     buttons = [
         [InlineKeyboardButton("Stop Edit", callback_data=f"update_var_{variable_name}"),
@@ -259,7 +259,7 @@ async def handle_edit_var(client, query, variable_name):
     await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
 
     try:
-        new_message = await asyncio.wait_for(client.listen(user_id), timeout=60)
+        new_message = await asyncio.wait_for(client.listen(user_id), timeout=5)
 
         if new_message and handler_dict.get(user_id) is True:
             if new_message.text:
