@@ -237,7 +237,7 @@ async def handle_files(client: Client, message: Message):
             elif caption_mode == "strikethrough":
                 caption = f"~~{caption}~~"
             elif caption_mode == "quote":
-                caption = f"<blockquote>{caption}</blockquote>"
+                caption = f"```{caption}```"
             elif caption_mode == "mono":
                 caption = f"`{caption}`"
             elif caption_mode == "spoiler":
