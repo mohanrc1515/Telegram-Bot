@@ -235,9 +235,9 @@ async def handle_files(client: Client, message: Message):
             elif caption_mode == "bold":
                 caption = f"**{caption}**"
             elif caption_mode == "italic":
-                caption = f"_{caption}_"
-            elif caption_mode == "underline":
                 caption = f"__{caption}__"
+            elif caption_mode == "underline":
+                caption = f"<u>{caption}</u>"
             elif caption_mode == "strikethrough":
                 caption = f"~~{caption}~~"
             elif caption_mode == "quote":
