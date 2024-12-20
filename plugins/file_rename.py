@@ -132,20 +132,6 @@ async def end_sequence(client, message):
             )
     await message.reply_text(f"Sequencing completed. Sent {len(queue)} files.")
 
-@Client.on_message(filters.command("getthumb") & filters.private)
-async def get_thumbnail(client, message: Message):
-    user_id = message.from_user.id
-
-    if not await db.is_user_authorized(user_id):
-        await message.reply_text(Config.USER_REPLY)
-        return    
-        
-    if thumbnail_extraction_mode.get(user_id, False):
-        await message.reply_text("You are already in thumbnail extraction mode. Please send the file to extract the thumbnail.")
-    else:
-        thumbnail_extraction_mode[user_id] = True
-        await message.reply_text("Please send the file from which you want to extract the thumbnail.")
-
 # Handle file uploads and renaming
 @Client.on_message(filters.private & (filters.document | filters.video | filters.audio))
 async def handle_files(client: Client, message: Message):
@@ -156,31 +142,8 @@ async def handle_files(client: Client, message: Message):
     
     if not await db.is_user_authorized(user_id):
         await message.reply_text(Config.USER_REPLY)
-        return
+        return        
         
-    if user_id in thumbnail_extraction_mode and thumbnail_extraction_mode[user_id]:
-        file = message.document or message.video or message.audio
-        if not file:
-            await message.reply_text("Unsupported File Type")
-            return
-
-        thumb_id = None
-        if message.video and message.video.thumbs:
-            thumb_id = message.video.thumbs[0].file_id
-        elif message.document and message.document.thumbs:
-            thumb_id = message.document.thumbs[0].file_id
-        if thumb_id:
-            thumb_path = await client.download_media(thumb_id)
-            try:
-                await client.send_photo(message.chat.id, thumb_path, caption="Here is the thumbnail you requested.")
-            finally:
-                if os.path.exists(thumb_path):
-                    os.remove(thumb_path)
-            del thumbnail_extraction_mode[user_id]
-        else:
-            await message.reply_text("No thumbnail available for this file.")
-        return
-
     if user_id in user_sequence_mode and user_sequence_mode[user_id]:
         file_name = None
         if message.document:
