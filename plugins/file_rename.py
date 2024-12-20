@@ -224,10 +224,28 @@ async def handle_files(client: Client, message: Message):
             upload_msg = await download_msg.edit("Trying To Upload...⚡")  # Retry edit
                 
         ph_path = None
+        c_thumb = await db.get_thumbnail(message.chat.id)                
         c_caption = await db.get_caption(message.chat.id)
-        c_thumb = await db.get_thumbnail(message.chat.id)        
-        caption = c_caption.format(filename=new_file_name, filesize=humanbytes(message.document.file_size), duration=convert(duration)) if c_caption else f"`{new_file_name}`"
+        caption = c_caption.format(filename=new_file_name, filesize=humanbytes(message.document.file_size), duration=convert(duration)) if c_caption else f"{new_file_name}"
+        caption_mode = await db.get_user_preference(message.chat.id) or "normal" 
 
+        if c_caption:
+            if caption_mode == "normal":
+                caption = caption  # No special formatting
+            elif caption_mode == "bold":
+                caption = f"**{caption}**"
+            elif caption_mode == "italic":
+                caption = f"_{caption}_"
+            elif caption_mode == "underline":
+                caption = f"__{caption}__"
+            elif caption_mode == "strikethrough":
+                caption = f"~~{caption}~~"
+            elif caption_mode == "quote":
+                caption = f"```{caption}```"
+            elif caption_mode == "mono":
+                caption = f"`{caption}`"
+            elif caption_mode == "spoiler":
+                caption = f"||{caption}||"
         
         if c_thumb:
             ph_path = await client.download_media(c_thumb)
