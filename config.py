@@ -197,7 +197,22 @@ Get Premium: Enhance your file renaming capabilities and enjoy the full potentia
 - Authorization Duration: 1 Month
 """
 
+    FEATURES_TXT = """
+⚡ <u>**Welcome to our Feature Showcase !**</u> ⚡ 
 
+➤ **Autorename Feature**  
+➤ **Metadata Editing**
+➤ **Files Dumping**
+➤ **Custom Message Before & After Dump**
+➤ **Files Sequencing**
+➤ **Refer & Gain Authentication**  
+➤ **Custom Thumbnail & Caption**
+
+<blockquote>For any advice text us : @Elites_Assistance</blockquote>
+"""
+    
+
+    
     DUMPMESSAGE_TXT= """**📖 <u>Dump Messages Guide</u> 📖**  
 
 1. **/startdump** : Reply to a text, image, or sticker to set the **Dump start message**.  
