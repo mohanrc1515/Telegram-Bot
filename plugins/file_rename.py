@@ -73,9 +73,6 @@ async def cancel_queue(client, message: Message):
         del thumbnail_extraction_mode[user_id]
     if user_id in user_files:
         del user_files[user_id]
-    
-    if await db.is_thumbnail_extraction_mode(user_id):
-        await db.set_thumbnail_extraction_mode(user_id, False)
      
     if await db.is_user_sequence_mode(user_id):
         await db.set_user_sequence_mode(user_id, False)
