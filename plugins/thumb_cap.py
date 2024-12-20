@@ -1,4 +1,4 @@
-from pyrogram import Client, filters, enums
+from pyrogram import Client, filters, enums, Message
 from helper.database import db
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
