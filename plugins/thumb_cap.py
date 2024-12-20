@@ -1,5 +1,6 @@
-from pyrogram import Client, filters, enums, InlineKeyboardButton, InlineKeyboardMarkup
+from pyrogram import Client, filters, enums
 from helper.database import db
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # Listen for the /captionmode command to send the initial selection buttons
 @Client.on_message(filters.private & filters.command('captionmode'))
