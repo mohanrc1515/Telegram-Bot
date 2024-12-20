@@ -227,7 +227,7 @@ async def handle_files(client: Client, message: Message):
         c_thumb = await db.get_thumbnail(message.chat.id)                
         c_caption = await db.get_caption(message.chat.id)
         caption = c_caption.format(filename=new_file_name, filesize=humanbytes(message.document.file_size), duration=convert(duration)) if c_caption else f"{new_file_name}"
-        caption_mode = await db.get_user_preference(message.chat.id) or "normal" 
+        caption_mode = await db.get_caption_preference(message.chat.id) or "normal" 
 
         if c_caption:
             if caption_mode == "normal":
