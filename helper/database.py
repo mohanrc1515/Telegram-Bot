@@ -444,6 +444,31 @@ class Database:
             {"$set": {"thumbnail_extraction_mode": mode}}, 
             upsert=True
         )
+
+     # Sequence Mode 
+    async def is_user_sequence_mode(self, user_id):
+        return await self.get_user_attr(user_id, "sequence_mode", False)
+
+    async def set_user_sequence_mode(self, user_id, mode):
+        await self.set_user_attr(user_id, "sequence_mode", mode)
+    
+    async def initialize_sequence_queue(self, user_id):
+        await self.set_user_attr(user_id, "sequence_queue", [])
+
+    async def add_to_sequence_queue(self, user_id, file_data):
+        await self.user_col.update_one(
+            {"_id": int(user_id)},
+            {"$push": {"sequence_queue": file_data}}
+        )
+    
+    async def get_sequence_queue(self, user_id):
+        return await self.get_user_attr(user_id, "sequence_queue", [])
+    
+        
+    async def clear_sequence_queue(self, user_id):
+        await self.set_user_attr(user_id, "sequence_queue", [])
+            
+        	
 	
     async def get_db_size(self):
         return (await self.db.command("dbstats"))['dataSize']
