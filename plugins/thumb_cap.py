@@ -68,7 +68,7 @@ async def callback_query_handler(client, callback_query):
         ])
 
         # Update the message text with the new button selection
-        await callback_query.message.edit_text("Choose your preferred caption mode:", reply_markup=keyboard)
+        await callback_query.message.edit_text("Select your preferred caption mode:", reply_markup=keyboard)
         await callback_query.answer(f"Caption mode set to: {mode.capitalize()}")
     except Exception as e:
         await callback_query.message.edit_text(f"An unexpected error occurred: {e}")
