@@ -1,4 +1,4 @@
-from pyrogram import Client, filters
+from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 from config import Txt
 
@@ -29,6 +29,7 @@ async def features_command(client, message):
 ➤ **Custom Thumbnail & Caption**
 
 <blockquote>For any advice text us : @Elites_Assistance</blockquote>""",
+        parse_mode=enums.ParseMode.HTML,
         reply_markup=InlineKeyboardMarkup([
             [
                 InlineKeyboardButton("🎥 Autorename", callback_data="auto_rename"),
@@ -66,7 +67,8 @@ async def features_callback(client, query: CallbackQuery):
 ➤ **Refer & Gain Authentication**  
 ➤ **Custom Thumbnail & Caption**
 
-<blockquote>For any advice text us : @Elites_Assistance<blockquote>""",
+<blockquote>For any advice text us : @Elites_Assistance</blockquote>""",
+        parse_mode=enums.ParseMode.HTML,
         reply_markup=InlineKeyboardMarkup([
             [
                 InlineKeyboardButton("🎥 Autorename", callback_data="auto_rename"),
@@ -121,6 +123,7 @@ async def feature_callback(client, query: CallbackQuery):
 
     await query.message.edit_text(
         text=text,
+        parse_mode=enums.ParseMode.HTML,
         disable_web_page_preview=True,
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("🔙 Back", callback_data="features")]
