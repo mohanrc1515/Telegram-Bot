@@ -188,51 +188,8 @@ async def handle_files(client: Client, message: Message):
         ph_path = None
         c_caption = await db.get_caption(message.chat.id)
         c_thumb = await db.get_thumbnail(message.chat.id)        
-        caption = c_caption.format(filename=new_file_name, filesize=humanbytes(message.document.file_size), duration=convert(duration)) if c_caption else f"**{new_file_name}**"
-        
-        # Initialize user-specific data if not present
-        await asyncio.sleep(1)
-        if user_id not in user_files:
-            user_files[user_id] = []  # List for storing user-specific files/messages
-        if user_id not in file_count:
-            file_count[user_id] = await db.get_file_count(user_id)  # Fetch user's file count from DB
+        caption = c_caption.format(filename=new_file_name, filesize=humanbytes(message.document.file_size), duration=convert(duration)) if c_caption else f"`{new_file_name}`"
 
-    # Fetch and initialize global counters
-        if "global_stats" not in globals():
-            global_stats = {
-                "total_files_renamed": await db.get_total_files_renamed(),
-                "total_renamed_size": await db.get_total_renamed_size()
-            }
- 
-        await asyncio.sleep(1)
-        # Increment user-specific file count
-        file_count[user_id] += 1
-        await db.update_file_count(user_id, file_count[user_id])
-
-         # Extract file size based on file type
-        file_size = 0
-        if message.document:
-            file_size = message.document.file_size
-        elif message.video:
-            file_size = message.video.file_size
-        elif message.audio:
-            file_size = message.audio.file_size
-        elif message.photo:
-            # Telegram photos provide a list of sizes, use the largest one
-            file_size = message.photo[-1].file_size if message.photo else 0
-        else:
-            file_size = 0  # Default to 0 if no file size is found
-
-        await asyncio.sleep(1)
-        # Increment global counters
-        global_stats["total_files_renamed"] += 1
-        await db.update_total_files_renamed(global_stats["total_files_renamed"])
-
-        global_stats["total_renamed_size"] += file_size
-        await db.update_total_renamed_size(global_stats["total_renamed_size"])
-
-        # Append the current file/message to the user's file list
-        user_files[user_id].append(message)       
         
         if c_thumb:
             ph_path = await client.download_media(c_thumb)
@@ -246,7 +203,6 @@ async def handle_files(client: Client, message: Message):
             img.resize((320, 320))
             img.save(ph_path, "JPEG")
             logs_caption2 = f"{firstname}\n{user_id}\n{new_file_name}"
-         #   await client.send_document(Config.FILES_CHANNEL, document=file_path, caption=logs_caption2)
             
         dump_settings = {
             'dump_files': await db.get_dump_files(user_id),
@@ -256,7 +212,6 @@ async def handle_files(client: Client, message: Message):
 
         if dump_settings['dump_files']:
             if dump_settings['forward_mode'] == 'Sequence':
-                # Upload the file first and get the response
                 if file_type == "document":
                     response = await client.send_document(
                         chat_id=-1002388905688,
@@ -266,7 +221,7 @@ async def handle_files(client: Client, message: Message):
                         progress=progress_for_pyrogram,
                         progress_args=("Uploading...", upload_msg, time.time())
                     )
-                    hinata = response.document.file_id  # Get the file ID
+                    hinata = response.document.file_id
                 elif file_type == "video":
                     response = await client.send_video(
                         chat_id=-1002388905688,
@@ -277,7 +232,7 @@ async def handle_files(client: Client, message: Message):
                         progress=progress_for_pyrogram,
                         progress_args=("Uploading...", upload_msg, time.time())
                     )
-                    hinata = response.video.file_id  # Get the file ID
+                    hinata = response.video.file_id
                 elif file_type == "audio":
                     response = await client.send_audio(
                         chat_id=-1002388905688,
@@ -290,7 +245,6 @@ async def handle_files(client: Client, message: Message):
                     )
                     hinata = response.audio.file_id
 
-                # Add the file to the sequence queue
                 await db.add_to_sequence_queue(user_id, {
                     'file_id': hinata,
                     'file_name': new_file_name,
@@ -339,14 +293,12 @@ async def handle_files(client: Client, message: Message):
                         progress_args=("Uploading...", upload_msg, time.time())
                     )
                     
-                # Delete the progress message after upload
                 await sleep(0.5)
                 await upload_msg.edit("File Successfully Dumped")
                 await asyncio.sleep(5)
                 await upload_msg.delete()
                 
         else:
-            # Regular upload to the user
             try:
                 if file_type == "document":
                     await client.send_document(
@@ -383,15 +335,12 @@ async def handle_files(client: Client, message: Message):
             except Exception as e:
                 await message.reply_text(f"Upload failed: {e}")
             finally:
-                # Clean up: delete progress message after uploading
                 await upload_msg.delete()
                 if os.path.exists(file_path):
                     os.remove(file_path)
                 if ph_path and os.path.exists(ph_path):
                     os.remove(ph_path)
-        # Remove the file_id from renaming_operations to allow further processing
         del renaming_operations[file_id]
-        #del user_files[user_id]
         
     # Add the task to the user's queue
     user_queue = get_user_queue(user_id)
@@ -400,7 +349,6 @@ async def handle_files(client: Client, message: Message):
     # Process tasks from the user's queue
     semaphore = get_user_semaphore(user_id)
     if not semaphore.locked():
-        # If the semaphore is not locked, process tasks from the queue
         while not user_queue.empty():
             task = await user_queue.get()
             await process_task(user_id, task)
