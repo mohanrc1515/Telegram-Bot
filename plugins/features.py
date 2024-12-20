@@ -18,7 +18,6 @@ async def features_command(client, message):
     await message.reply_photo(
         photo="https://graph.org/file/304a4a1c70aa0c520e956.jpg",
         caption=Txt.FEATURES_TXT,
-        parse_mode=enums.ParseMode.HTML,
         reply_markup=InlineKeyboardMarkup([
             [
                 InlineKeyboardButton("🎥 Autorename", callback_data="auto_rename"),
@@ -46,7 +45,6 @@ async def features_command(client, message):
 async def features_callback(client, query: CallbackQuery):
     await query.message.edit_text(
         text=Txt.FEATURES_TXT,
-        parse_mode=enums.ParseMode.HTML,
         reply_markup=InlineKeyboardMarkup([
             [
                 InlineKeyboardButton("🎥 Autorename", callback_data="auto_rename"),
