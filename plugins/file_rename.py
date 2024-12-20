@@ -366,15 +366,24 @@ async def handle_files(client: Client, message: Message):
                     )
                     hinata = response.audio.file_id
 
-                await db.add_to_sequence_queue(user_id, {
+                file_data = {
                     'file_id': hinata,
                     'file_name': new_file_name,
+                    'file_type': file_type,
+                    'file_path': file_path,
                     'thumb_path': ph_path,
                     'caption': caption,
-                    'file_type': file_type,
-                    'file_path': file_path
-                })
-
+                    'file_size': message.document.file_size if message.document else None,
+                    'duration': message.video.duration if message.video else None,
+                    'season': extract_season(new_file_name) or 0,
+                    'episode': extract_episode_number(new_file_name) or 0,
+                    'quality': extract_quality(new_file_name) or 'Unknown',
+                    'volume': extract_volume_number(new_file_name) or 0,
+                    'chapter': extract_chapter_number(new_file_name) or 0
+                }
+                # Pass the consolidated file_data to the database function
+                await db.add_to_sequence_queue(user_id, file_data)
+                
                 if user_id not in sequence_notified or not sequence_notified[user_id]:
                     await message.reply_text("Once you're done renaming all files, use /sequencedump to send them to your dump channel....")
                     sequence_notified[user_id] = True
