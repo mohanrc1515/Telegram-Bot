@@ -641,16 +641,27 @@ async def sequence_dump(client, message: Message):
         await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
 
 
-async def send_file_with_retry(send_method, dump_channel, item):
+async def send_file_with_retry(send_method, dump_channel, item, user_id, client):
     try:
         # Attempt to send the file
-        await send_method(dump_channel, **{
-            item['file_type']: item['file_id'],
-            'caption': item['file_name']
-        })
+        await send_method(
+            chat_id=dump_channel,
+            **{
+                item['file_type']: item['file_id'],
+                'caption': item['file_name']
+            }
+        )
     except FloodWait as e:
-        # If FloodWait occurs, wait for the specified time and retry
-        print(f"Flood wait of {e.value} seconds for file {item['file_name']}")
-        await asyncio.sleep(e.value)
-        await send_file_with_retry(send_method, dump_channel, item)
+        # Notify the user about the flood wait
+        flood_wait_message = f"Flood wait detected! Waiting for {e.value} seconds before retrying the file: {item['file_name']}."
+        await client.send_message(user_id, flood_wait_message)
         
+        # Wait for the specified duration
+        await asyncio.sleep(e.value)
+        
+        # Retry the same file
+        await send_file_with_retry(send_method, dump_channel, item, user_id, client)
+    except Exception as ex:
+        # Handle other errors and notify the user
+        error_message = f"Failed to send file {item['file_name']} due to error: {ex}."
+        await client.send_message(user_id, error_message)
