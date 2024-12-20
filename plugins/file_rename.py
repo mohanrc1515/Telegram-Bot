@@ -522,48 +522,79 @@ async def send_custom_message(client, dump_channel, message_data, current_item, 
     except Exception as e:
         print(f"Failed to send message: {e}")
 
-@Client.on_message(filters.command("sequencedump") & filters.private)
-async def sequence_dump(client, message: Message):
+from pyrogram import Client, filters
+from pyrogram.types import Message
+
+# Quality priority mapping
+quality_priority = {
+    "4K": 1,
+    "1080p": 2,
+    "720p": 3,
+    "480p": 4,
+    "360p": 5,
+    "Unknown": 6
+}
+
+@Client.on_message(filters.command("sequencedump"))
+async def sequence_dump(client: Client, message: Message):
     user_id = message.from_user.id
-    queue = await db.get_user_sequence_queue(user_id)
 
-    if not queue:
-        return await message.reply_text("No files found in your sequence queue.")
+    # Fetch user sequence queue
+    sequence_queue = await db.get_user_sequence_queue(user_id)
+    if not sequence_queue:
+        return await message.reply_text("Your sequence queue is empty. Please add files first.")
 
-    # Extract metadata and sort the queue
-    for item in queue:
-        file_name = item['file_name']
-        item['season'] = int(extract_season(file_name) or 0)
-        item['episode'] = int(extract_episode_number(file_name) or 0)
-        item['chapter'] = int(extract_chapter_number(file_name) or 0)
-        item['volume'] = int(extract_volume_number(file_name) or 0)
+    # Sort the queue based on priority
+    sequence_queue.sort(key=lambda x: (
+        quality_priority.get(x['quality'], float('inf')),
+        x['season'],
+        x['episode'],
+        x['volume'],
+        x['chapter']
+    ))
 
-    # Sorting: Prioritize by season, episode, volume, then chapter
-    queue.sort(key=lambda x: (x['season'], x['episode'], x['volume'], x['chapter']))
-
+    # Get the dump channel
     dump_channel = await db.get_dump_channel(user_id)
     if not dump_channel:
         return await message.reply_text("No dump channel found. Please connect it using /dump.")
 
-    status_message = await message.reply_text("Starting to send files in sequence to channel...")
-    for item in queue:
-        try:
-            if item['file_type'] == 'document':
-                await client.send_document(dump_channel, document=item['file_id'], caption=item['file_name'])
-            elif item['file_type'] == 'video':
-                await client.send_video(dump_channel, video=item['file_id'], caption=item['file_name'])
-            elif item['file_type'] == 'audio':
-                await client.send_audio(dump_channel, audio=item['file_id'], caption=item['file_name'])
-            elif item['file_type'] == 'pdf':
-                await client.send_document(dump_channel, document=item['file_id'], caption=item['file_name'])
-            else:
-                await message.reply_text(f"Unsupported media type: {item['file_type ']}")
-        except Exception as e:
-            await message.reply_text(f"Failed to send file: {item['file_name']}\nError: {e}")
+    # Notify the user
+    await message.reply_text("Sending your files in sequence to the dump channel...")
 
+    for file in sequence_queue:
+        try:
+            if file['file_type'] == "document":
+                await client.send_document(
+                    chat_id=dump_channel,
+                    document=file['file_path'],
+                    thumb=file.get('thumb_path'),
+                    caption=file.get('caption', '')  # Original caption
+                )
+            elif file['file_type'] == "video":
+                await client.send_video(
+                    chat_id=dump_channel,
+                    video=file['file_path'],
+                    duration=file.get('duration'),
+                    thumb=file.get('thumb_path'),
+                    caption=file.get('caption', '')  # Original caption
+                )
+            elif file['file_type'] == "audio":
+                await client.send_audio(
+                    chat_id=dump_channel,
+                    audio=file['file_path'],
+                    duration=file.get('duration'),
+                    thumb=file.get('thumb_path'),
+                    caption=file.get('caption', '')  # Original caption
+                )
+        except Exception as e:
+            await message.reply_text(f"Failed to send file {file['file_name']}: {str(e)}")
+
+    # Clear the user's sequence queue after sending
     await db.clear_user_sequence_queue(user_id)
-    await client.delete_messages(chat_id=message.chat.id, message_ids=status_message.id)
-    await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
+
+    # Notify the user of completion
+    await message.reply_text("All files have been sent in sequence!")
+
     
         
 @Client.on_message(filters.command("bsnsnanwnsequencedump") & filters.private)
