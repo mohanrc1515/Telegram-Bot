@@ -38,8 +38,12 @@ def get_user_semaphore(user_id):
 async def process_task(user_id, task):
     semaphore = get_user_semaphore(user_id)
     async with semaphore:
-        await task()
-        await asyncio.sleep(5)
+        try:
+            await task()
+        except Exception as e:
+            print(f"Error processing task for user {user_id}: {e}")
+        finally:
+            await asyncio.sleep(5)
 
 @Client.on_message(filters.command("cancel") & filters.private)
 async def cancel_queue(client, message: Message):
