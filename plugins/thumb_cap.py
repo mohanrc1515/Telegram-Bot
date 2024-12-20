@@ -1,6 +1,35 @@
 from pyrogram import Client, filters, enums
 from helper.database import db
 
+@Client.on_message(filters.private & filters.command('captionmode'))
+async def caption_mode(client, message):
+    user_id = message.from_user.id
+    current_mode = await db.get_user_preference(user_id) or "normal"  # Default to normal
+
+    buttons = [
+        [
+            InlineKeyboardButton(f"{'✅ ' if current_mode == 'normal' else ''}Normal", callback_data="mode_normal"),
+            InlineKeyboardButton(f"{'✅ ' if current_mode == 'mono' else ''}Mono", callback_data="mode_mono"),
+        ],
+        [
+            InlineKeyboardButton(f"{'✅ ' if current_mode == 'bold' else ''}Bold", callback_data="mode_bold"),
+            InlineKeyboardButton(f"{'✅ ' if current_mode == 'italic' else ''}Italic", callback_data="mode_italic"),
+        ],
+        [
+            InlineKeyboardButton(f"{'✅ ' if current_mode == 'underline' else ''}Underlined", callback_data="mode_underline"),
+            InlineKeyboardButton(f"{'✅ ' if current_mode == 'quote' else ''}Quote", callback_data="mode_quote"),
+        ],
+        [
+            InlineKeyboardButton(f"{'✅ ' if current_mode == 'strikethrough' else ''}Strikethrough", callback_data="mode_strikethrough"),
+            InlineKeyboardButton(f"{'✅ ' if current_mode == 'spoiler' else ''}Spoiler", callback_data="mode_spoiler"),
+        ]
+    ]
+
+    await message.reply_text(
+        "Select your preferred caption mode:",
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+
 @Client.on_message(filters.private & filters.command('set_caption'))
 async def add_caption(client, message):
     if len(message.command) == 1:
