@@ -12,7 +12,7 @@ async def caption_mode(client, message):
     buttons = [
         [
             InlineKeyboardButton(f"{'✅ ' if current_mode == 'normal' else ''}Normal", callback_data="setmode_normal"),
-            InlineKeyboardButton(f"{'✅ ' if current_mode == 'mono' else ''}Mono", callback_data="setmode_mono"),
+            InlineKeyboardButton(f"{'✅ ' if current_mode == 'quote' else ''}No Caption", callback_data="setmode_quote"),
         ],
         [
             InlineKeyboardButton(f"{'✅ ' if current_mode == 'bold' else ''}Bold", callback_data="setmode_bold"),
@@ -20,7 +20,7 @@ async def caption_mode(client, message):
         ],
         [
             InlineKeyboardButton(f"{'✅ ' if current_mode == 'underline' else ''}Underlined", callback_data="setmode_underline"),
-            InlineKeyboardButton(f"{'✅ ' if current_mode == 'quote' else ''}Quote", callback_data="setmode_quote"),
+            InlineKeyboardButton(f"{'✅ ' if current_mode == 'mono' else ''}Mono", callback_data="setmode_mono"),
         ],
         [
             InlineKeyboardButton(f"{'✅ ' if current_mode == 'strikethrough' else ''}Strikethrough", callback_data="setmode_strikethrough"),
@@ -51,18 +51,18 @@ async def callback_query_handler(client, callback_query):
         bold_button_text = "Bold ✅" if mode == "bold" else "Bold"
         italic_button_text = "Italic ✅" if mode == "italic" else "Italic"
         underline_button_text = "Underlined ✅" if mode == "underline" else "Underlined"
-        quote_button_text = "Quote ✅" if mode == "quote" else "Quote"
+        quote_button_text = "No Caption ✅" if mode == "quote" else "No Caption"
         strikethrough_button_text = "Strikethrough ✅" if mode == "strikethrough" else "Strikethrough"
         spoiler_button_text = "Spoiler ✅" if mode == "spoiler" else "Spoiler"
 
         # Create the updated inline keyboard with buttons
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton(normal_button_text, callback_data="setmode_normal"),
-            InlineKeyboardButton(mono_button_text, callback_data="setmode_mono")],
+	    InlineKeyboardButton(quote_button_text, callback_data="setmode_quote")],
             [InlineKeyboardButton(bold_button_text, callback_data="setmode_bold"),
             InlineKeyboardButton(italic_button_text, callback_data="setmode_italic")],
             [InlineKeyboardButton(underline_button_text, callback_data="setmode_underline"),
-            InlineKeyboardButton(quote_button_text, callback_data="setmode_quote")],
+            InlineKeyboardButton(mono_button_text, callback_data="setmode_mono")],
             [InlineKeyboardButton(strikethrough_button_text, callback_data="setmode_strikethrough"),
             InlineKeyboardButton(spoiler_button_text, callback_data="setmode_spoiler")]
         ])
