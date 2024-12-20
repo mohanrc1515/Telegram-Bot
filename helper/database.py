@@ -175,13 +175,14 @@ class Database:
 
     # Sequence Queue Management
     async def get_user_sequence_queue(self, user_id):
-        return await self.get_user_attr(user_id, "sequence_queue", [])
+        user_data = await self.user_col.find_one({"_id": int(user_id)})
+        return user_data.get("sequence_queue", [])
 
-    async def add_to_sequence_queue(self, user_id, file_id):
-        await self.user_col.update_one({"_id": int(user_id)}, {"$push": {"sequence_queue": file_id}})
+    async def add_to_sequence_queue(self, user_id, file_data):
+        await self.user_col.update_one({"_id": int(user_id)}, {"$push": {"sequence_queue": file_data}})
 
     async def clear_user_sequence_queue(self, user_id):
-        await self.set_user_attr(user_id, "sequence_queue", [])
+        await self.user_col.update_one({"_id": int(user_id)}, {"$set": {"sequence_queue": []}})
 
     # Check if the user has already sent a join request to the specific channel
     async def find_join_req(self, user_id, channel_id):
