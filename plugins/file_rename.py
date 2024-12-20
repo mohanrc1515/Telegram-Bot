@@ -18,7 +18,7 @@ import asyncio
 import pytz
 
 renaming_operations = {}
-thumbnail_extraction_mode
+thumbnail_extraction_mode = {}
 sequence_notified = {}
 user_files = {}
 user_task_queues = {}
