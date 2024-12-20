@@ -57,14 +57,14 @@ async def callback_query_handler(client, callback_query):
 
         # Create the updated inline keyboard with buttons
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton(normal_button_text, callback_data="setmode_normal")],
-            [InlineKeyboardButton(mono_button_text, callback_data="setmode_mono")],
-            [InlineKeyboardButton(bold_button_text, callback_data="setmode_bold")],
-            [InlineKeyboardButton(italic_button_text, callback_data="setmode_italic")],
-            [InlineKeyboardButton(underline_button_text, callback_data="setmode_underline")],
-            [InlineKeyboardButton(quote_button_text, callback_data="setmode_quote")],
-            [InlineKeyboardButton(strikethrough_button_text, callback_data="setmode_strikethrough")],
-            [InlineKeyboardButton(spoiler_button_text, callback_data="setmode_spoiler")]
+            [InlineKeyboardButton(normal_button_text, callback_data="setmode_normal"),
+            InlineKeyboardButton(mono_button_text, callback_data="setmode_mono")],
+            [InlineKeyboardButton(bold_button_text, callback_data="setmode_bold"),
+            InlineKeyboardButton(italic_button_text, callback_data="setmode_italic")],
+            [InlineKeyboardButton(underline_button_text, callback_data="setmode_underline"),
+            InlineKeyboardButton(quote_button_text, callback_data="setmode_quote")],
+            [InlineKeyboardButton(strikethrough_button_text, callback_data="setmode_strikethrough"),
+            InlineKeyboardButton(spoiler_button_text, callback_data="setmode_spoiler")]
         ])
 
         # Update the message text with the new button selection
