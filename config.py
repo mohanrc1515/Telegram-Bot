@@ -208,7 +208,7 @@ Get Premium: Enhance your file renaming capabilities and enjoy the full potentia
 ➤ **Refer & Gain Authentication**  
 ➤ **Custom Thumbnail & Caption**
 
-<blockquote>For any advice text us : @Elites_Assistance</blockquote>
+<blockquote>For any advices : @Elites_Assistance</blockquote>
 """
     
 
