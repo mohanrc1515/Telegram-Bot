@@ -74,7 +74,7 @@ Use These Keywords To Setup Custom File Name
 ➜ /set_caption: Uꜱᴇ ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ꜱᴇᴛ ᴀ ᴄᴜꜱᴛᴏᴍ ᴄᴀᴘᴛɪᴏɴ.  
 ➜ /see_caption: Uꜱᴇ ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴠɪᴇᴡ ʏᴏᴜʀ ᴄᴜʀʀᴇɴᴛ ᴄᴜꜱᴛᴏᴍ ᴄᴀᴘᴛɪᴏɴ.  
 ➜ /del_caption: Uꜱᴇ ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴅᴇʟᴇᴛᴇ ʏᴏᴜʀ ᴄᴜꜱᴛᴏᴍ ᴄᴀᴘᴛɪᴏɴ.
-➜ /captionmode: Usᴇ ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ sᴇʟᴇᴄᴛ ʏᴏᴜʀ ᴄᴀᴘᴛɪᴏɴ ᴛʏᴘᴇ
+➜ /caption_mode: Usᴇ ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ sᴇʟᴇᴄᴛ ʏᴏᴜʀ ᴄᴀᴘᴛɪᴏɴ ᴛʏᴘᴇ
 
 Exᴀᴍᴘʟᴇ:</b> <code>/set_caption {filename}</code>"""
 
