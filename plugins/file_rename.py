@@ -305,7 +305,7 @@ async def handle_files(client: Client, message: Message):
                 caption = f"<u>{caption}</u>"
             elif caption_mode == "strikethrough":
                 caption = f"~~{caption}~~"
-            elif caption_mode == "quote":
+            elif caption_mode == "nocaption":
                 caption = f"```{caption}```"
             elif caption_mode == "mono":
                 caption = f"`{caption}`"
