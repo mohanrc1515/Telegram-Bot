@@ -72,7 +72,7 @@ async def callback_query_handler(client, callback_query):
         await callback_query.message.edit_media(
             InputMediaPhoto(
                 media="https://envs.sh/75H.jpg",
-                caption=f"<u>Caption Mode</u>\n\nSelect your preferred caption mode:\n\n<b>Current Caption:</b> {current_caption}\n<b>Current Mode:</b> {mode.capitalize()}",
+                caption=f"<u><b>📝 CAPTION MODE 📝</b></u>\n\n㊂ Select your preferred caption mode:\n\n<b>๏ Current Caption:</b> {current_caption}\n<b>๏ Current Mode:</b> {mode.capitalize()}",
             ),
             reply_markup=InlineKeyboardMarkup(buttons)
         )
