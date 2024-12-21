@@ -45,7 +45,35 @@ async def process_task(user_id, task):
             print(f"Error processing task for user {user_id}: {e}")
         finally:
             await asyncio.sleep(5)
-    
+
+async def increment_global_stats(message):
+    # Determine the file size based on the message type
+    file_size = 0
+    if message.document:
+        file_size = message.document.file_size
+    elif message.video:
+        file_size = message.video.file_size
+    elif message.audio:
+        file_size = message.audio.file_size
+    elif message.photo:
+        file_size = message.photo[-1].file_size if message.photo else 0
+
+    # Update the total number of files renamed
+    total_files_renamed = await db.get_total_files_renamed()
+    new_total_files_renamed = total_files_renamed + 1
+    await db.update_total_files_renamed(new_total_files_renamed)
+
+    # Update the total size of renamed files
+    total_renamed_size = await db.get_total_renamed_size()
+    new_total_renamed_size = total_renamed_size + file_size
+    await db.update_total_renamed_size(new_total_renamed_size)
+
+async def increment_user_file_count(user_id):
+    current_file_count = await db.get_file_count(user_id)
+    new_file_count = current_file_count + 1
+    await db.update_file_count(user_id, new_file_count)
+    return new_file_count    
+
 @Client.on_message(filters.command("cancel") & filters.private)
 async def cancel_queue(client, message: Message):
     user_id = message.from_user.id
