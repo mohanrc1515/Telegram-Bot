@@ -571,7 +571,7 @@ async def sequence_dump(client: Client, message: Message):
     message_type = await db.get_user_preference(user_id)
     failed_files = []
 
-    async def send_method(file):
+    async def send_methods(file):
         """Send file based on its type."""
         try:
             if file['file_type'] == "document":
