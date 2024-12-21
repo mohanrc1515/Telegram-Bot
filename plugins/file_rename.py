@@ -535,7 +535,7 @@ quality_priority = {
     "Unknown": 6
 }
 
-@Client.on_message(filters.command("sequencedump"))
+@Client.on_message(filters.command("sequencedump") & filters.private)
 async def sequence_dump(client: Client, message: Message):
     user_id = message.from_user.id
 
@@ -544,7 +544,14 @@ async def sequence_dump(client: Client, message: Message):
     if not sequence_queue:
         return await message.reply_text("Your sequence queue is empty. Please add files first.")
 
-    # Sort the queue based on priority
+    # Extract metadata and sort the queue
+    for item in sequence_queue:
+        item['season'] = int(extract_season(item['file_name']) or 0)
+        item['episode'] = int(extract_episode_number(item['file_name']) or 0)
+        item['chapter'] = int(extract_chapter_number(item['file_name']) or 0)
+        item['volume'] = int(extract_volume_number(item['file_name']) or 0)
+        item['quality'] = extract_quality(item['file_name']) or 'Unknown'
+
     sequence_queue.sort(key=lambda x: (
         quality_priority.get(x['quality'], float('inf')),
         x['season'],
@@ -561,14 +568,18 @@ async def sequence_dump(client: Client, message: Message):
     # Notify the user
     await message.reply_text("Sending your files in sequence to the dump channel...")
 
-    for file in sequence_queue:
+    message_type = await db.get_user_preference(user_id)
+    failed_files = []
+
+    async def send_file(file):
+        """Send file based on its type."""
         try:
             if file['file_type'] == "document":
                 await client.send_document(
                     chat_id=dump_channel,
                     document=file['file_path'],
                     thumb=file.get('thumb_path'),
-                    caption=file.get('caption', '')  # Original caption
+                    caption=file.get('caption', '')
                 )
             elif file['file_type'] == "video":
                 await client.send_video(
@@ -576,7 +587,7 @@ async def sequence_dump(client: Client, message: Message):
                     video=file['file_path'],
                     duration=file.get('duration'),
                     thumb=file.get('thumb_path'),
-                    caption=file.get('caption', '')  # Original caption
+                    caption=file.get('caption', '')
                 )
             elif file['file_type'] == "audio":
                 await client.send_audio(
@@ -584,92 +595,10 @@ async def sequence_dump(client: Client, message: Message):
                     audio=file['file_path'],
                     duration=file.get('duration'),
                     thumb=file.get('thumb_path'),
-                    caption=file.get('caption', '')  # Original caption
+                    caption=file.get('caption', '')
                 )
         except Exception as e:
-            await message.reply_text(f"Failed to send file {file['file_name']}: {str(e)}")
-
-    # Clear the user's sequence queue after sending
-    await db.clear_user_sequence_queue(user_id)
-
-    # Notify the user of completion
-    await message.reply_text("All files have been sent in sequence!")
-
-    
-        
-@Client.on_message(filters.command("bsnsnanwnsequencedump") & filters.private)
-async def bwbwjwsequence_dump(client, message: Message):
-    user_id = message.from_user.id
-    queue = await db.get_user_sequence_queue(user_id)
-
-    if not queue:
-        return await message.reply_text("No files found in your sequence queue.")
-
-    # Extract metadata and sort the queue
-    for item in queue:
-        file_name = item['file_name']
-        item['season'] = int(extract_season(file_name) or 0)
-        item['episode'] = int(extract_episode_number(file_name) or 0)
-        item['chapter'] = int(extract_chapter_number(file_name) or 0)
-        item['volume'] = int(extract_volume_number(file_name) or 0)
-        item['quality'] = extract_quality(file_name) or '0'
-
-    queue.sort(key=lambda x: (
-        quality_priority.get(x['quality'], float('inf')),
-        x['season'],
-        x['episode'],
-        x['volume'],
-        x['chapter']
-    ))
-
-    dump_channel = await db.get_dump_channel(user_id)
-    if not dump_channel:
-        return await message.reply_text("No dump channel found. Please connect it using /dump.")
-
-    status_message = await message.reply_text("Starting to send files in sequence to channel...")
-    send_methods = {
-        'document': client.send_document,
-        'video': client.send_video,
-        'audio': client.send_audio
-    }
-
-    failed_files = []
-    message_type = await db.get_user_preference(user_id)
-    c_caption = await db.get_caption(user_id)
-    caption_mode = await db.get_caption_preference(user_id) or "normal"
-
-    async def apply_caption_mode(caption):
-        if caption_mode == "bold":
-            return f"**{caption}**"
-        elif caption_mode == "italic":
-            return f"__{caption}__"
-        elif caption_mode == "underline":
-            return f"<u>{caption}</u>"
-        elif caption_mode == "strikethrough":
-            return f"~~{caption}~~"
-        elif caption_mode == "quote":
-            return f"<blockquote>{caption}</blockquote>"
-        elif caption_mode == "mono":
-            return f"`{caption}`"
-        elif caption_mode == "spoiler":
-            return f"||{caption}||"
-        return caption
-
-    async def generate_caption(item):
-        caption = (
-            c_caption.format(
-                filename=item['file_name'],
-                filesize=humanbytes(item.get('file_size', 0)),
-                duration=convert(item.get('duration', 0)),
-                season=item.get('season', ''),
-                episode=item.get('episode', '')
-            )
-            if c_caption else item['file_name']
-        )
-        return await apply_caption_mode(caption)
-        
-    # Get user preference (season, quality, both, or episode batch)
-    message_type = await db.get_user_preference(user_id)        
+            failed_files.append(f"Failed to send file: {file['file_name']} (Error: {e})")
 
     if message_type == "season":
         for index, item in enumerate(queue):
@@ -835,6 +764,7 @@ async def bwbwjwsequence_dump(client, message: Message):
     else:
         await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")       
 
+
 async def send_file_with_retry(send_method, dump_channel, item):
     try:
         # Attempt to send the file
@@ -847,3 +777,4 @@ async def send_file_with_retry(send_method, dump_channel, item):
         print(f"Flood wait of {e.value} seconds for file {item['file_name']}")
         await asyncio.sleep(e.value)
         await send_file_with_retry(send_method, dump_channel, item)
+        
