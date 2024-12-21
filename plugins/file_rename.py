@@ -493,3 +493,163 @@ quality_priority = {
     "4k": 5,
     "8k": 6
 }
+
+@Client.on_message(filters.command("sequencedump") & filters.private)
+async def sequencedump_command(client, message: Message):
+    user_id = message.from_user.id
+
+    # Fetch user's sequence queue and preferences
+    queue = await db.get_user_sequence_queue(user_id)
+    message_type = await db.get_user_preference(user_id)
+    dump_channel = await db.get_dump_channel(user_id)
+
+    if not queue:
+        await message.reply_text("Your sequence queue is empty.")
+        return
+
+    status_message = await message.reply_text("Processing and sending your sequence. Please wait...")
+
+    # Sort queue
+    queue.sort(key=lambda x: (
+        quality_priority.get(x['quality'], float('inf')),
+        x['season'],
+        x['episode'],
+        x['volume'],
+        x['chapter']
+    ))
+
+    # Fetch start and end messages
+    start_message = await db.get_start_message(user_id)
+    end_message = await db.get_end_message(user_id)
+
+    # Helper function to send custom messages
+    async def send_custom_message(client, dump_channel, message_data, **kwargs):
+        if not message_data:
+            return
+
+        # Replace placeholders in the message text
+        message_text = message_data.get('text', '')
+        for key, value in kwargs.items():
+            message_text = message_text.replace(f"{{{key}}}", str(value) if value else '')
+
+        sticker_id = message_data.get('sticker_id')
+        image_id = message_data.get('image_id')
+
+        try:
+            if sticker_id:
+                await client.send_sticker(dump_channel, sticker_id)
+            elif image_id:
+                await client.send_photo(dump_channel, image_id, caption=message_text)
+            else:
+                await client.send_message(dump_channel, message_text)
+        except Exception as e:
+            print(f"Failed to send custom message: {e}")
+
+    # Track failed files
+    failed_files = []
+
+    # Process queue based on message type
+    try:
+        if message_type == "season":
+            current_season = None
+            for file in queue:
+                if file["season"] != current_season:
+                    if current_season is not None:
+                        await send_custom_message(client, dump_channel, end_message, season=current_season)
+                    current_season = file["season"]
+                    await send_custom_message(client, dump_channel, start_message, season=current_season)
+
+                await send_file(client, dump_channel, file)
+            if current_season is not None:
+                await send_custom_message(client, dump_channel, end_message, season=current_season)
+
+        elif message_type == "quality":
+            current_quality = None
+            for file in queue:
+                if file["quality"] != current_quality:
+                    if current_quality is not None:
+                        await send_custom_message(client, dump_channel, end_message, quality=current_quality)
+                    current_quality = file["quality"]
+                    await send_custom_message(client, dump_channel, start_message, quality=current_quality)
+
+                await send_file(client, dump_channel, file)
+            if current_quality is not None:
+                await send_custom_message(client, dump_channel, end_message, quality=current_quality)
+
+        elif message_type == "both":
+            current_season, current_quality = None, None
+            for file in queue:
+                if (file["season"], file["quality"]) != (current_season, current_quality):
+                    if current_season is not None and current_quality is not None:
+                        await send_custom_message(client, dump_channel, end_message, season=current_season, quality=current_quality)
+                    current_season, current_quality = file["season"], file["quality"]
+                    await send_custom_message(client, dump_channel, start_message, season=current_season, quality=current_quality)
+
+                await send_file(client, dump_channel, file)
+            if current_season is not None and current_quality is not None:
+                await send_custom_message(client, dump_channel, end_message, season=current_season, quality=current_quality)
+
+        elif message_type == "episodebatch":
+            current_episode = None
+            for file in queue:
+                if file["episode"] != current_episode:
+                    if current_episode is not None:
+                        await send_custom_message(client, dump_channel, end_message, episode=current_episode)
+                    current_episode = file["episode"]
+                    await send_custom_message(client, dump_channel, start_message, episode=current_episode)
+
+                await send_file(client, dump_channel, file)
+            if current_episode is not None:
+                await send_custom_message(client, dump_channel, end_message, episode=current_episode)
+
+        elif message_type == "custombatch":
+            batch_size = await db.get_user_dumpbatch(user_id) or 1
+            for i in range(0, len(queue), batch_size):
+                batch = queue[i:i + batch_size]
+                await send_custom_message(client, dump_channel, start_message, batch_start=i + 1, batch_end=i + len(batch))
+                for file in batch:
+                    await send_file(client, dump_channel, file)
+                await send_custom_message(client, dump_channel, end_message, batch_start=i + 1, batch_end=i + len(batch))
+
+    finally:
+        # Cleanup sequence queue
+        sequence_notified[user_id] = False
+        await db.clear_user_sequence_queue(user_id)
+        await status_message.delete()
+
+        # Notify user of success or failure
+        if failed_files:
+            await message.reply_text(
+                f"Files sent, but some failed:\n" + "\n".join(failed_files)
+            )
+        else:
+            await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
+
+# Helper function to send files
+async def send_file(client, dump_channel, file):
+    try:
+        if file["file_type"] == "document":
+            await client.send_document(
+                chat_id=dump_channel,
+                document=file["file_id"],
+                caption=file.get("caption"),
+                thumb=file.get("thumb_path")
+            )
+        elif file["file_type"] == "video":
+            await client.send_video(
+                chat_id=dump_channel,
+                video=file["file_id"],
+                caption=file.get("caption"),
+                duration=file.get("duration"),
+                thumb=file.get("thumb_path")
+            )
+        elif file["file_type"] == "audio":
+            await client.send_audio(
+                chat_id=dump_channel,
+                audio=file["file_id"],
+                caption=file.get("caption"),
+                duration=file.get("duration"),
+                thumb=file.get("thumb_path")
+            )
+    except Exception as e:
+        print(f"Failed to send {file['file_name']}: {e}")
