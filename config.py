@@ -108,7 +108,7 @@ Unlock exclusive features and elevate your experience:
 **Enhanced Speed**: Enjoy faster downloading and uploading.
 
 **Pricing**:  
-- 🗓️ **Monthly Premium**: ₹60/month  
+- 🗓️ **Monthly Premium**: ₹70/month  
 - 📅 **Weekly Premium**: ₹29/week  
 - 🕒 **Daily Premium**: ₹5/day  
 - 🔒 **Private Bot**: Contact the owner for details
