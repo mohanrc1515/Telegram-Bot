@@ -300,8 +300,14 @@ async def handle_files(client: Client, message: Message):
             await add_metadata(path, metadata_path, sub_title, sub_author, sub_subtitle, sub_audio, sub_video, sub_artist, download_msg)
 
         else:
+            await asyncio.sleep(1.5)
             await download_msg.edit("Processing....  ⚡")
-            
+            await asyncio.sleep(2)
+            await increment_user_file_count(user_id)
+            await asyncio.sleep(2)
+            await increment_global_stats(message)
+            await asyncio.sleep(1.5)
+        
         duration = 0
         try:
             metadata = extractMetadata(createParser(file_path))
@@ -752,10 +758,6 @@ async def sequencedump_command(client, message):
     finally:
         sequence_notified[user_id] = False
         await db.clear_user_sequence_queue(user_id)
-        del quality_groups
-        del episodes
-        del failed_files
-        await status_message.delete()
 
         if failed_files:
             await message.reply_text(f"Files sent, but some failed:\n" + "\n".join(failed_files))
