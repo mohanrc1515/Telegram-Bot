@@ -93,7 +93,7 @@ async def start_cmd(client, message: Message):
         button = InlineKeyboardMarkup([
             [InlineKeyboardButton("Help & Commands", callback_data='commands')],
             [
-                InlineKeyboardButton('Updates', url='https://t.me/Elites_Bots'),
+                InlineKeyboardButton('Updates', url='https://t.me/AutoRenameUpdates'),
                 InlineKeyboardButton('Support', url='https://t.me/Elites_Assistance')
             ],
             [
