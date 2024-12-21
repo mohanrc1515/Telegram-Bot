@@ -685,47 +685,48 @@ async def sequencedump_command(client, message):
 
         elif message_type == "both":
             previous_season = None
-            previous_quality = None
+            quality_groups = {}
 
-            for index, item in enumerate(queue):
-                current_season = item["season"]
-                current_quality = item["quality"]
+            # Group files by season first, then by quality
+            for item in queue:
+                season = item["season"]
+                quality = item["quality"]
 
-                # Check if season or quality has changed
-                if (previous_season is not None and previous_season != current_season) or \
-                   (previous_quality is not None and previous_quality != current_quality):
+                if season not in quality_groups:
+                    quality_groups[season] = {}
+
+                if quality not in quality_groups[season]:
+                    quality_groups[season][quality] = []
+
+                quality_groups[season][quality].append(item)
+
+            # Iterate through each season and its quality groups
+            for season, quality_files in sorted(quality_groups.items()):
+                previous_quality = None
+
+                # Iterate through each quality group for the current season
+                for quality, files in sorted(quality_files.items(), key=lambda x: quality_priority.get(x[0], float("inf"))):
+                    if start_message:
+                        await send_custom_message(client, dump_channel, start_message, files[0], files[0], files[-1])
+
+                    for file in files:
+                        try:
+                            await send_file(client, dump_channel, file)
+                        except Exception as e:
+                            failed_files.append(f"Failed to send file: {file['file_name']} (Error: {e})")
 
                     if end_message:
-                        await send_custom_message(
-                            client, dump_channel, end_message, 
-                            queue[index - 1], first_item, queue[index - 1]
-                        )
+                        await send_custom_message(client, dump_channel, end_message, files[-1], files[0], files[-1])
 
-                # Send start message for the new group
-                if previous_season is None or previous_season != current_season or \
-                   previous_quality is None or previous_quality != current_quality:
-                    
-                    if start_message:
-                        await send_custom_message(
-                            client, dump_channel, start_message, 
-                            item, first_item, queue[index - 1] if index > 0 else None
-                        )
-
-                previous_season = current_season
-                previous_quality = current_quality
-
-                try:
-                    await send_file(client, dump_channel, item)
-                except Exception as e:
-                    failed_files.append(f"Failed to send file: {item['file_name']} (Error: {e})")
-
-            # Send final end message
-            if end_message:
-                await send_custom_message(client, dump_channel, end_message, last_item, first_item, last_item)
+                # After sending all qualities for a season, move to the next season
+                previous_season = season
         
     finally:
         sequence_notified[user_id] = False
         await db.clear_user_sequence_queue(user_id)
+        del quality_groups[user_id]
+        del episodes[user_id]
+        del failed_files[user_id]
         await status_message.delete()
 
         if failed_files:
