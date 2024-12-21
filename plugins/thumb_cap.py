@@ -1,12 +1,12 @@
 from pyrogram import Client, filters, enums
 from helper.database import db
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, InputMediaPhoto
 
-# Listen for the /captionmode command to send the initial selection buttons
-@Client.on_message(filters.private & filters.command('captionmode'))
+@Client.on_message(filters.private & filters.command('caption_mode'))
 async def caption_mode(client, message):
     user_id = message.from_user.id
     current_mode = await db.get_caption_preference(user_id) or "normal"  # Default to normal
+    current_caption = await db.get_caption(user_id) or "None"  # Default caption
 
     # Create buttons with a checkmark for the current mode
     buttons = [
@@ -28,9 +28,11 @@ async def caption_mode(client, message):
         ]
     ]
 
-    # Send the initial message with buttons
-    await message.reply_text(
-        "Select your preferred caption mode:",
+    # Send a photo with the initial message and buttons
+    await client.send_photo(
+        chat_id=message.chat.id,
+        photo="https://envs.sh/75H.jpg",
+        caption=f"<u>Caption Mode</u>\n\nSelect your preferred caption mode:\n\n<b>Current Caption:</b> {current_caption}\n<b>Current Mode:</b> {current_mode.capitalize()}",
         reply_markup=InlineKeyboardMarkup(buttons)
     )
 
@@ -44,34 +46,40 @@ async def callback_query_handler(client, callback_query):
     try:
         # Save the preferred caption mode to the database
         await db.set_caption_preference(user_id, mode)
+        current_caption = await db.get_caption(user_id) or "None"  # Fetch the current caption
 
-        # Update the button texts to reflect the new preference
-        normal_button_text = "Normal ✅" if mode == "normal" else "Normal"
-        mono_button_text = "Mono ✅" if mode == "mono" else "Mono"
-        bold_button_text = "Bold ✅" if mode == "bold" else "Bold"
-        italic_button_text = "Italic ✅" if mode == "italic" else "Italic"
-        underline_button_text = "Underlined ✅" if mode == "underline" else "Underlined"
-        quote_button_text = "No Caption ✅" if mode == "quote" else "No Caption"
-        strikethrough_button_text = "Strikethrough ✅" if mode == "strikethrough" else "Strikethrough"
-        spoiler_button_text = "Spoiler ✅" if mode == "spoiler" else "Spoiler"
+        # Create updated buttons
+        buttons = [
+            [
+                InlineKeyboardButton(f"{'✅ ' if mode == 'normal' else ''}Normal", callback_data="setmode_normal"),
+                InlineKeyboardButton(f"{'✅ ' if mode == 'quote' else ''}No Caption", callback_data="setmode_quote"),
+            ],
+            [
+                InlineKeyboardButton(f"{'✅ ' if mode == 'bold' else ''}Bold", callback_data="setmode_bold"),
+                InlineKeyboardButton(f"{'✅ ' if mode == 'italic' else ''}Italic", callback_data="setmode_italic"),
+            ],
+            [
+                InlineKeyboardButton(f"{'✅ ' if mode == 'underline' else ''}Underlined", callback_data="setmode_underline"),
+                InlineKeyboardButton(f"{'✅ ' if mode == 'mono' else ''}Mono", callback_data="setmode_mono"),
+            ],
+            [
+                InlineKeyboardButton(f"{'✅ ' if mode == 'strikethrough' else ''}Strikethrough", callback_data="setmode_strikethrough"),
+                InlineKeyboardButton(f"{'✅ ' if mode == 'spoiler' else ''}Spoiler", callback_data="setmode_spoiler"),
+            ]
+        ]
 
-        # Create the updated inline keyboard with buttons
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton(normal_button_text, callback_data="setmode_normal"),
-	    InlineKeyboardButton(quote_button_text, callback_data="setmode_quote")],
-            [InlineKeyboardButton(bold_button_text, callback_data="setmode_bold"),
-            InlineKeyboardButton(italic_button_text, callback_data="setmode_italic")],
-            [InlineKeyboardButton(underline_button_text, callback_data="setmode_underline"),
-            InlineKeyboardButton(mono_button_text, callback_data="setmode_mono")],
-            [InlineKeyboardButton(strikethrough_button_text, callback_data="setmode_strikethrough"),
-            InlineKeyboardButton(spoiler_button_text, callback_data="setmode_spoiler")]
-        ])
-
-        # Update the message text with the new button selection
-        await callback_query.message.edit_text("Select your preferred caption mode:", reply_markup=keyboard)
+        # Edit the message to show the updated caption mode and buttons
+        await callback_query.message.edit_media(
+            InputMediaPhoto(
+                media="https://envs.sh/75H.jpg",
+                caption=f"<u>Caption Mode</u>\n\nSelect your preferred caption mode:\n\n<b>Current Caption:</b> {current_caption}\n<b>Current Mode:</b> {mode.capitalize()}",
+            ),
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
         await callback_query.answer(f"Caption mode set to: {mode.capitalize()}")
     except Exception as e:
-        await callback_query.message.edit_text(f"An unexpected error occurred: {e}")
+        await callback_query.answer(f"An unexpected error occurred: {e}", show_alert=True)
+        
 
 
 @Client.on_message(filters.private & filters.command('set_caption'))
