@@ -540,19 +540,19 @@ async def sequence_dump(client: Client, message: Message):
     user_id = message.from_user.id
 
     # Fetch user sequence queue
-    sequence_queue = await db.get_user_sequence_queue(user_id)
-    if not sequence_queue:
+    queue = await db.get_user_sequence_queue(user_id)
+    if not queue:
         return await message.reply_text("Your sequence queue is empty. Please add files first.")
 
     # Extract metadata and sort the queue
-    for item in sequence_queue:
+    for item in queue:
         item['season'] = int(extract_season(item['file_name']) or 0)
         item['episode'] = int(extract_episode_number(item['file_name']) or 0)
         item['chapter'] = int(extract_chapter_number(item['file_name']) or 0)
         item['volume'] = int(extract_volume_number(item['file_name']) or 0)
         item['quality'] = extract_quality(item['file_name']) or 'Unknown'
 
-    sequence_queue.sort(key=lambda x: (
+    queue.sort(key=lambda x: (
         quality_priority.get(x['quality'], float('inf')),
         x['season'],
         x['episode'],
