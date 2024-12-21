@@ -625,7 +625,6 @@ async def sequencedump_command(client, message: Message):
         else:
             await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
 
-# Helper function to send files
 async def send_file(client, dump_channel, file):
     try:
         if file["file_type"] == "document":
@@ -651,5 +650,16 @@ async def send_file(client, dump_channel, file):
                 duration=file.get("duration"),
                 thumb=file.get("thumb_path")
             )
+    except FloodWait as e:
+        # If FloodWait occurs, wait and retry
+        print(f"Flood wait of {e.value} seconds for file {file['file_name']}")
+        await asyncio.sleep(e.value)
+        await send_file_with_retry(client, dump_channel, file)
     except Exception as e:
         print(f"Failed to send {file['file_name']}: {e}")
+
+async def send_file_with_retry(client, dump_channel, file):
+    try:
+        await send_file(client, dump_channel, file)
+    except Exception as e:
+        print(f"Failed to resend {file['file_name']} after retry: {e}")
