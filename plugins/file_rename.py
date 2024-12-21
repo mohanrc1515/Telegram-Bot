@@ -524,7 +524,7 @@ async def send_custom_message(client, dump_channel, message_data, current_item, 
     except Exception as e:
         print(f"Failed to send message: {e}")
 
-
+            
 async def send_file(client, dump_channel, file):
     try:
         if file["file_type"] == "document":
@@ -597,7 +597,7 @@ async def sequencedump_command(client, message):
             previous_season = None
 
             for index, item in enumerate(queue):
-                current_season = item['season']
+                current_season = item["season"]
 
                 if previous_season is not None and previous_season != current_season:
                     if end_message:
@@ -608,10 +608,6 @@ async def sequencedump_command(client, message):
                         await send_custom_message(client, dump_channel, start_message, item, queue[0], queue[index - 1])
 
                 previous_season = current_season
-
-                if not send_method:
-                    failed_files.append(f"Unsupported media type: {item['file_name']} ({item['file_type']})")
-                    continue
 
                 try:
                     await send_file(client, dump_channel, item)
@@ -624,23 +620,18 @@ async def sequencedump_command(client, message):
         elif message_type == "quality":
             quality_groups = {}
             for item in queue:
-                quality = item['quality']
+                quality = item["quality"]
                 if quality not in quality_groups:
                     quality_groups[quality] = []
                 quality_groups[quality].append(item)
 
-            for quality in sorted(quality_groups.keys(), key=lambda q: quality_priority.get(q, float('inf'))):
+            for quality in sorted(quality_groups.keys(), key=lambda q: quality_priority.get(q, float("inf"))):
                 files = quality_groups[quality]
 
                 if start_message:
                     await send_custom_message(client, dump_channel, start_message, files[0], files[0], files[-1])
 
                 for file in files:
-                    send_method = send_methods.get(file['file_type'])
-                    if not send_method:
-                        failed_files.append(f"Unsupported media type: {file['file_name']} ({file['file_type']})")
-                        continue
-
                     try:
                         await send_file(client, dump_channel, file)
                     except Exception as e:
@@ -652,23 +643,18 @@ async def sequencedump_command(client, message):
         elif message_type == "episodebatch":
             episodes = {}
             for item in queue:
-                key = (item['season'], item['episode'])
+                key = (item["season"], item["episode"])
                 if key not in episodes:
                     episodes[key] = []
                 episodes[key].append(item)
 
             for (season, episode), files in sorted(episodes.items()):
-                files.sort(key=lambda x: quality_priority.get(x['quality'], float('inf')))
+                files.sort(key=lambda x: quality_priority.get(x["quality"], float("inf")))
 
                 if start_message:
                     await send_custom_message(client, dump_channel, start_message, files[0], files[0], files[-1])
 
                 for file in files:
-                    send_method = send_methods.get(file['file_type'])
-                    if not send_method:
-                        failed_files.append(f"Unsupported media type: {file['file_name']} ({file['file_type']})")
-                        continue
-
                     try:
                         await send_file(client, dump_channel, file)
                     except Exception as e:
@@ -683,17 +669,12 @@ async def sequencedump_command(client, message):
                 return await message.reply_text("Batch size not set. Use /setbatch number to set batch size.")
 
             for i in range(0, len(queue), batch_size):
-                batch = queue[i:i + batch_size]
+                batch = queue[i : i + batch_size]
 
                 if start_message:
                     await send_custom_message(client, dump_channel, start_message, batch[0], batch[0], batch[-1])
 
                 for file in batch:
-                    send_method = send_methods.get(file['file_type'])
-                    if not send_method:
-                        failed_files.append(f"Unsupported media type: {file['file_name']} ({file['file_type']})")
-                        continue
-
                     try:
                         await send_file(client, dump_channel, file)
                     except Exception as e:
@@ -707,8 +688,8 @@ async def sequencedump_command(client, message):
             previous_quality = None
 
             for index, item in enumerate(queue):
-                current_season = item['season']
-                current_quality = item['quality']
+                current_season = item["season"]
+                current_quality = item["quality"]
 
                 # Check if season or quality has changed
                 if (previous_season is not None and previous_season != current_season) or \
@@ -733,10 +714,6 @@ async def sequencedump_command(client, message):
                 previous_season = current_season
                 previous_quality = current_quality
 
-                if not send_method:
-                    failed_files.append(f"Unsupported media type: {item['file_name']} ({item['file_type']})")
-                    continue
-
                 try:
                     await send_file(client, dump_channel, item)
                 except Exception as e:
@@ -746,8 +723,6 @@ async def sequencedump_command(client, message):
             if end_message:
                 await send_custom_message(client, dump_channel, end_message, last_item, first_item, last_item)
         
-            
-            
     finally:
         sequence_notified[user_id] = False
         await db.clear_user_sequence_queue(user_id)
@@ -756,9 +731,5 @@ async def sequencedump_command(client, message):
         if failed_files:
             await message.reply_text(f"Files sent, but some failed:\n" + "\n".join(failed_files))
         else:
-            await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
-            
-            
-            
-            
-                       
+            await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")            
+                
