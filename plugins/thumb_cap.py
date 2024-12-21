@@ -12,7 +12,7 @@ async def caption_mode(client, message):
     buttons = [
         [
             InlineKeyboardButton(f"{'✅ ' if current_mode == 'normal' else ''}Normal", callback_data="setmode_normal"),
-            InlineKeyboardButton(f"{'✅ ' if current_mode == 'quote' else ''}No Caption", callback_data="setmode_quote"),
+            InlineKeyboardButton(f"{'✅ ' if current_mode == 'nocaption' else ''}No Caption", callback_data="setmode_nocap"),
         ],
         [
             InlineKeyboardButton(f"{'✅ ' if current_mode == 'bold' else ''}Bold", callback_data="setmode_bold"),
@@ -38,7 +38,7 @@ async def caption_mode(client, message):
 
 
 # Callback Query Handler to set the caption mode
-@Client.on_callback_query(filters.regex(r"^setmode_(normal|mono|bold|italic|underline|quote|strikethrough|spoiler)$"))
+@Client.on_callback_query(filters.regex(r"^setmode_(normal|mono|bold|italic|underline|nocap|strikethrough|spoiler)$"))
 async def callback_query_handler(client, callback_query):
     user_id = callback_query.from_user.id
     mode = callback_query.data.split("_")[1]  # Extract mode from callback data (e.g., "setmode_normal" -> "normal")
@@ -52,7 +52,7 @@ async def callback_query_handler(client, callback_query):
         buttons = [
             [
                 InlineKeyboardButton(f"{'✅ ' if mode == 'normal' else ''}Normal", callback_data="setmode_normal"),
-                InlineKeyboardButton(f"{'✅ ' if mode == 'quote' else ''}No Caption", callback_data="setmode_quote"),
+                InlineKeyboardButton(f"{'✅ ' if mode == 'nocaption' else ''}No Caption", callback_data="setmode_npcap"),
             ],
             [
                 InlineKeyboardButton(f"{'✅ ' if mode == 'bold' else ''}Bold", callback_data="setmode_bold"),
