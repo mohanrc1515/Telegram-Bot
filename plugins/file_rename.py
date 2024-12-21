@@ -76,8 +76,7 @@ async def cancel_queue(client, message: Message):
      
     if await db.is_user_sequence_mode(user_id):
         await db.set_user_sequence_mode(user_id, False)
-
-    del renaming_operations[file_id]
+   
     await db.clear_user_sequence_queue(user_id)
     await db.clear_sequence_queue(user_id)
     await message.reply_text("All tasks have been canceled !!")
@@ -725,9 +724,9 @@ async def sequencedump_command(client, message):
     finally:
         sequence_notified[user_id] = False
         await db.clear_user_sequence_queue(user_id)
-        del quality_groups[file_id]
-        del episodes[file_id]
-        del failed_files[file_id]
+        del quality_groups
+        del episodes
+        del failed_files
         await status_message.delete()
 
         if failed_files:
