@@ -72,11 +72,11 @@ async def callback_query_handler(client, callback_query):
         await callback_query.message.edit_media(
             InputMediaPhoto(
                 media="https://envs.sh/75H.jpg",
-                caption=f"<u><b>📝 CAPTION MODE 📝</b></u>\n\n㊂ Select your preferred caption mode:\n\n<b>๏ Current Caption:</b> {current_caption}\n<b>๏ Current Mode:</b> {current_mode.capitalize()}",
+                caption=f"<u><b>📝 CAPTION MODE 📝</b></u>\n\n㊂ Select your preferred caption mode:\n\n<b>๏ Current Caption:</b> {current_caption}\n<b>๏ Current Mode:</b> {mode.capitalize()}",
             ),
             reply_markup=InlineKeyboardMarkup(buttons)
         )
-        await callback_query.answer(f"Caption mode set to: {current_mode.capitalize()}")
+        await callback_query.answer(f"Caption mode set to: {mode.capitalize()}")
     except Exception as e:
         await callback_query.answer(f"An unexpected error occurred: {e}", show_alert=True)
         
