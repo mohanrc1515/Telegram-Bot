@@ -536,22 +536,23 @@ quality_priority = {
 }
 
 @Client.on_message(filters.command("sequencedump") & filters.private)
-async def sequence_dump(client: Client, message: Message):
+async def sequence_dump(client, message: Message):
     user_id = message.from_user.id
-
-    # Fetch user sequence queue
     queue = await db.get_user_sequence_queue(user_id)
+
     if not queue:
-        return await message.reply_text("Your sequence queue is empty. Please add files first.")
+        return await message.reply_text("No files found in your sequence queue.")
 
     # Extract metadata and sort the queue
     for item in queue:
-        item['season'] = int(extract_season(item['file_name']) or 0)
-        item['episode'] = int(extract_episode_number(item['file_name']) or 0)
-        item['chapter'] = int(extract_chapter_number(item['file_name']) or 0)
-        item['volume'] = int(extract_volume_number(item['file_name']) or 0)
-        item['quality'] = extract_quality(item['file_name']) or 'Unknown'
+        file_name = item['file_name']
+        item['season'] = int(extract_season(file_name) or 0)
+        item['episode'] = int(extract_episode_number(file_name) or 0)
+        item['chapter'] = int(extract_chapter_number(file_name) or 0)
+        item['volume'] = int(extract_volume_number(file_name) or 0)
+        item['quality'] = extract_quality(file_name) or '0'
 
+    # Sorting by quality priority, then season, episode, volume, and chapter
     queue.sort(key=lambda x: (
         quality_priority.get(x['quality'], float('inf')),
         x['season'],
@@ -560,45 +561,41 @@ async def sequence_dump(client: Client, message: Message):
         x['chapter']
     ))
 
-    # Get the dump channel
     dump_channel = await db.get_dump_channel(user_id)
     if not dump_channel:
         return await message.reply_text("No dump channel found. Please connect it using /dump.")
 
-    # Notify the user
-    await message.reply_text("Sending your files in sequence to the dump channel...")
+    status_message = await message.reply_text("Starting to send files in sequence to channel...")
 
-    message_type = await db.get_user_preference(user_id)
+    send_methods = {
+        'document': lambda file: client.send_document(
+            chat_id=dump_channel,
+            document=file['file_path'],
+            thumb=file.get('thumb_path'),
+            caption=file.get('caption', '')
+        ),
+        'video': lambda file: client.send_video(
+            chat_id=dump_channel,
+            video=file['file_path'],
+            duration=file.get('duration'),
+            thumb=file.get('thumb_path'),
+            caption=file.get('caption', '')
+        ),
+        'audio': lambda file: client.send_audio(
+            chat_id=dump_channel,
+            audio=file['file_path'],
+            duration=file.get('duration'),
+            thumb=file.get('thumb_path'),
+            caption=file.get('caption', '')
+        )
+    }
+
     failed_files = []
+    previous_season = None
+    previous_quality = None
 
-    async def send_methods(file):
-        """Send file based on its type."""
-        try:
-            if file['file_type'] == "document":
-                await client.send_document(
-                    chat_id=dump_channel,
-                    document=file['file_path'],
-                    thumb=file.get('thumb_path'),
-                    caption=file.get('caption', '')
-                )
-            elif file['file_type'] == "video":
-                await client.send_video(
-                    chat_id=dump_channel,
-                    video=file['file_path'],
-                    duration=file.get('duration'),
-                    thumb=file.get('thumb_path'),
-                    caption=file.get('caption', '')
-                )
-            elif file['file_type'] == "audio":
-                await client.send_audio(
-                    chat_id=dump_channel,
-                    audio=file['file_path'],
-                    duration=file.get('duration'),
-                    thumb=file.get('thumb_path'),
-                    caption=file.get('caption', '')
-                )
-        except Exception as e:
-            failed_files.append(f"Failed to send file: {file['file_name']} (Error: {e})")
+    # Get user preference (season, quality, both, or episode batch)
+    message_type = await db.get_user_preference(user_id)
 
     if message_type == "season":
         for index, item in enumerate(queue):
