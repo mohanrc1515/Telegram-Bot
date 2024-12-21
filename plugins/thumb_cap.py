@@ -52,7 +52,7 @@ async def callback_query_handler(client, callback_query):
         buttons = [
             [
                 InlineKeyboardButton(f"{'✅ ' if mode == 'normal' else ''}Normal", callback_data="setmode_normal"),
-                InlineKeyboardButton(f"{'✅ ' if mode == 'nocaption' else ''}No Caption", callback_data="setmode_npcap"),
+                InlineKeyboardButton(f"{'✅ ' if mode == 'nocaption' else ''}No Caption", callback_data="setmode_nocap"),
             ],
             [
                 InlineKeyboardButton(f"{'✅ ' if mode == 'bold' else ''}Bold", callback_data="setmode_bold"),
@@ -76,7 +76,7 @@ async def callback_query_handler(client, callback_query):
             ),
             reply_markup=InlineKeyboardMarkup(buttons)
         )
-        await callback_query.answer(f"Caption mode set to: {mode.capitalize()}")
+        await callback_query.answer(f"Caption mode set to: {current_mode.capitalize()}")
     except Exception as e:
         await callback_query.answer(f"An unexpected error occurred: {e}", show_alert=True)
         
