@@ -32,7 +32,7 @@ async def caption_mode(client, message):
     await client.send_photo(
         chat_id=message.chat.id,
         photo="https://envs.sh/75H.jpg",
-        caption=f"<u><b>📝 CAPTION MODE 📝</b></u>\n\n㊂ Select your preferred caption mode:\n\n<b>๏ Current Caption:</b> {current_caption}\n<b>๏ Current Mode:</b> {mode.capitalize()}",
+        caption=f"<u><b>📝 CAPTION MODE 📝</b></u>\n\n㊂ Select your preferred caption mode:\n\n<b>๏ Current Caption:</b> {current_caption}\n<b>๏ Current Mode:</b> {current_mode.capitalize()}",
         reply_markup=InlineKeyboardMarkup(buttons)
     )
 
@@ -72,7 +72,7 @@ async def callback_query_handler(client, callback_query):
         await callback_query.message.edit_media(
             InputMediaPhoto(
                 media="https://envs.sh/75H.jpg",
-                caption=f"<u><b>📝 CAPTION MODE 📝</b></u>\n\n㊂ Select your preferred caption mode:\n\n<b>๏ Current Caption:</b> {current_caption}\n<b>๏ Current Mode:</b> {mode.capitalize()}",
+                caption=f"<u><b>📝 CAPTION MODE 📝</b></u>\n\n㊂ Select your preferred caption mode:\n\n<b>๏ Current Caption:</b> {current_caption}\n<b>๏ Current Mode:</b> {current_mode.capitalize()}",
             ),
             reply_markup=InlineKeyboardMarkup(buttons)
         )
