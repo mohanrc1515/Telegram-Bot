@@ -495,18 +495,25 @@ quality_priority = {
 }
 
 
-async def send_custom_message(client, dump_channel, message_data, **kwargs):
-    if not message_data:
-        return
 
+async def send_custom_message(client, dump_channel, message_data, current_item, first_item=None, last_item=None):
     # Replace placeholders in the message text
-    message_text = message_data.get("text", "")
-    for key, value in kwargs.items():
-        message_text = message_text.replace(f"{{{key}}}", str(value) if value else "")
+    message_text = message_data.get('text', '').replace("{quality}", current_item['quality'])
+    message_text = message_text.replace("{title}", extract_title(current_item['file_name']))
+    message_text = message_text.replace("{season}", str(current_item.get('season', '')))
+    message_text = message_text.replace("{episode}", str(current_item.get('episode', '')))
 
-    sticker_id = message_data.get("sticker_id")
-    image_id = message_data.get("image_id")
+    # Replace placeholders for first and last episodes
+    if first_item:
+        message_text = message_text.replace("{firstepisode}", str(first_item.get('episode', '')))
+    if last_item:
+        message_text = message_text.replace("{lastepisode}", str(last_item.get('episode', '')))
 
+    # Retrieve optional sticker or image IDs
+    sticker_id = message_data.get('sticker_id')
+    image_id = message_data.get('image_id')
+
+    # Send the appropriate type of message
     try:
         if sticker_id:
             await client.send_sticker(dump_channel, sticker_id)
@@ -515,7 +522,8 @@ async def send_custom_message(client, dump_channel, message_data, **kwargs):
         else:
             await client.send_message(dump_channel, message_text)
     except Exception as e:
-        print(f"Failed to send custom message: {e}")
+        print(f"Failed to send message: {e}")
+
 
 async def send_file(client, dump_channel, file):
     try:
@@ -549,6 +557,7 @@ async def send_file(client, dump_channel, file):
     except Exception as e:
         print(f"Failed to send {file['file_name']}: {e}")
 
+
 @Client.on_message(filters.command("sequencedump") & filters.private)
 async def sequencedump_command(client, message):
     user_id = message.from_user.id
@@ -578,75 +587,167 @@ async def sequencedump_command(client, message):
     first_item = queue[0]
     last_item = queue[-1]
 
-    # Fetch start and end messages
     start_message = await db.get_start_message(user_id)
     end_message = await db.get_end_message(user_id)
 
-    # Track failed files
     failed_files = []
 
     try:
         if message_type == "season":
-            current_season = None
-            for file in queue:
-                if file["season"] != current_season:
-                    if current_season is not None:
-                        await send_custom_message(client, dump_channel, end_message, season=current_season)
-                    current_season = file["season"]
-                    await send_custom_message(
-                        client, dump_channel, start_message, current_item=file, first_item=first_item, last_item=last_item
-                    )
+            previous_season = None
 
-                await send_file(client, dump_channel, file)
+            for index, item in enumerate(queue):
+                current_season = item['season']
 
-            if current_season is not None:
-                await send_custom_message(client, dump_channel, end_message, season=current_season)
+                if previous_season is not None and previous_season != current_season:
+                    if end_message:
+                        await send_custom_message(client, dump_channel, end_message, queue[index - 1], queue[0], queue[index - 1])
+
+                if previous_season is None or previous_season != current_season:
+                    if start_message:
+                        await send_custom_message(client, dump_channel, start_message, item, queue[0], queue[index - 1])
+
+                previous_season = current_season
+
+                if not send_method:
+                    failed_files.append(f"Unsupported media type: {item['file_name']} ({item['file_type']})")
+                    continue
+
+                try:
+                    await send_file(client, dump_channel, item)
+                except Exception as e:
+                    failed_files.append(f"Failed to send file: {item['file_name']} (Error: {e})")
+
+            if end_message:
+                await send_custom_message(client, dump_channel, end_message, last_item, first_item, last_item)
 
         elif message_type == "quality":
-            current_quality = None
-            for file in queue:
-                if file["quality"] != current_quality:
-                    if current_quality is not None:
-                        await send_custom_message(client, dump_channel, end_message, quality=current_quality)
-                    current_quality = file["quality"]
-                    await send_custom_message(
-                        client, dump_channel, start_message, current_item=file, first_item=first_item, last_item=last_item
-                    )
+            quality_groups = {}
+            for item in queue:
+                quality = item['quality']
+                if quality not in quality_groups:
+                    quality_groups[quality] = []
+                quality_groups[quality].append(item)
 
-                await send_file(client, dump_channel, file)
+            for quality in sorted(quality_groups.keys(), key=lambda q: quality_priority.get(q, float('inf'))):
+                files = quality_groups[quality]
 
-            if current_quality is not None:
-                await send_custom_message(client, dump_channel, end_message, quality=current_quality)
+                if start_message:
+                    await send_custom_message(client, dump_channel, start_message, files[0], files[0], files[-1])
+
+                for file in files:
+                    send_method = send_methods.get(file['file_type'])
+                    if not send_method:
+                        failed_files.append(f"Unsupported media type: {file['file_name']} ({file['file_type']})")
+                        continue
+
+                    try:
+                        await send_file(client, dump_channel, file)
+                    except Exception as e:
+                        failed_files.append(f"Failed to send file: {file['file_name']} (Error: {e})")
+
+                if end_message:
+                    await send_custom_message(client, dump_channel, end_message, files[-1], files[0], files[-1])
 
         elif message_type == "episodebatch":
-            current_episode = None
-            for file in queue:
-                episode = file.get("episode")
-                if episode != current_episode:
-                    if current_episode is not None:
-                        await send_custom_message(client, dump_channel, end_message, episode=current_episode)
+            episodes = {}
+            for item in queue:
+                key = (item['season'], item['episode'])
+                if key not in episodes:
+                    episodes[key] = []
+                episodes[key].append(item)
 
-                    current_episode = episode
-                    await send_custom_message(
-                        client, dump_channel, start_message, current_item=file, first_item=first_item, last_item=last_item
-                    )
+            for (season, episode), files in sorted(episodes.items()):
+                files.sort(key=lambda x: quality_priority.get(x['quality'], float('inf')))
 
-                await send_file(client, dump_channel, file)
+                if start_message:
+                    await send_custom_message(client, dump_channel, start_message, files[0], files[0], files[-1])
 
-            if current_episode is not None:
-                await send_custom_message(client, dump_channel, end_message, episode=current_episode)
+                for file in files:
+                    send_method = send_methods.get(file['file_type'])
+                    if not send_method:
+                        failed_files.append(f"Unsupported media type: {file['file_name']} ({file['file_type']})")
+                        continue
+
+                    try:
+                        await send_file(client, dump_channel, file)
+                    except Exception as e:
+                        failed_files.append(f"Failed to send file: {file['file_name']} (Error: {e})")
+
+                if end_message:
+                    await send_custom_message(client, dump_channel, end_message, files[-1], files[0], files[-1])
 
         elif message_type == "custombatch":
-            batch_size = await db.get_user_dumpbatch(user_id) or 1
-            for i in range(0, len(queue), batch_size):
-                batch = queue[i : i + batch_size]
-                await send_custom_message(
-                    client, dump_channel, start_message, current_item=first_item, batch_start=i + 1, batch_end=i + len(batch)
-                )
-                for file in batch:
-                    await send_file(client, dump_channel, file)
-                await send_custom_message(client, dump_channel, end_message, current_item=last_item)
+            batch_size = await db.get_user_dumpbatch(user_id)
+            if not batch_size:
+                return await message.reply_text("Batch size not set. Use /setbatch number to set batch size.")
 
+            for i in range(0, len(queue), batch_size):
+                batch = queue[i:i + batch_size]
+
+                if start_message:
+                    await send_custom_message(client, dump_channel, start_message, batch[0], batch[0], batch[-1])
+
+                for file in batch:
+                    send_method = send_methods.get(file['file_type'])
+                    if not send_method:
+                        failed_files.append(f"Unsupported media type: {file['file_name']} ({file['file_type']})")
+                        continue
+
+                    try:
+                        await send_file(client, dump_channel, file)
+                    except Exception as e:
+                        failed_files.append(f"Failed to send file: {file['file_name']} (Error: {e})")
+
+                if end_message:
+                    await send_custom_message(client, dump_channel, end_message, batch[-1], batch[0], batch[-1])
+
+        elif message_type == "both":
+            previous_season = None
+            previous_quality = None
+
+            for index, item in enumerate(queue):
+                current_season = item['season']
+                current_quality = item['quality']
+
+                # Check if season or quality has changed
+                if (previous_season is not None and previous_season != current_season) or \
+                   (previous_quality is not None and previous_quality != current_quality):
+
+                    if end_message:
+                        await send_custom_message(
+                            client, dump_channel, end_message, 
+                            queue[index - 1], first_item, queue[index - 1]
+                        )
+
+                # Send start message for the new group
+                if previous_season is None or previous_season != current_season or \
+                   previous_quality is None or previous_quality != current_quality:
+                    
+                    if start_message:
+                        await send_custom_message(
+                            client, dump_channel, start_message, 
+                            item, first_item, queue[index - 1] if index > 0 else None
+                        )
+
+                previous_season = current_season
+                previous_quality = current_quality
+
+                if not send_method:
+                    failed_files.append(f"Unsupported media type: {item['file_name']} ({item['file_type']})")
+                    continue
+
+                try:
+                    await send_file(client, dump_channel, item)
+                except Exception as e:
+                    failed_files.append(f"Failed to send file: {item['file_name']} (Error: {e})")
+
+            # Send final end message
+            if end_message:
+                await send_custom_message(client, dump_channel, end_message, last_item, first_item, last_item)
+        
+            
+            
     finally:
         sequence_notified[user_id] = False
         await db.clear_user_sequence_queue(user_id)
@@ -656,4 +757,8 @@ async def sequencedump_command(client, message):
             await message.reply_text(f"Files sent, but some failed:\n" + "\n".join(failed_files))
         else:
             await message.reply_text(f"All files sent in sequence to channel {dump_channel}.")
-        
+            
+            
+            
+            
+                       
