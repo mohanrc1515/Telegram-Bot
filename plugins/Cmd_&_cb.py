@@ -22,7 +22,7 @@ async def admin_commands(client, message):
         "**<u>Admin Commands**</u>\n\n" + "\n".join(commands),
         disable_web_page_preview=True,
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("Channel", url="https://t.me/Elites_Bots"),
+            [InlineKeyboardButton("4Channel", url="https://t.me/Elites_Bots"),
              InlineKeyboardButton("Group", url="https://t.me/Elites_Assistance")],
         ])
     )    
@@ -35,7 +35,7 @@ async def start_callback(client, query: CallbackQuery):
         reply_markup=InlineKeyboardMarkup([[
             InlineKeyboardButton("Hᴇʟᴘ & Cᴏᴍᴍᴀɴᴅs", callback_data='commands')
         ],[
-            InlineKeyboardButton('Uᴩᴅᴀᴛᴇꜱ', url='https://t.me/Elites_Bots'),
+            InlineKeyboardButton('Uᴩᴅᴀᴛᴇꜱ', url='https://t.me/AutoRenameUpdates'),
             InlineKeyboardButton('Sᴜᴩᴩᴏʀᴛ', url='https://t.me/Elites_Assistance')
         ],[
             InlineKeyboardButton('Aʙᴏᴜᴛ', callback_data='about'),
