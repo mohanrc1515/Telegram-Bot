@@ -758,6 +758,7 @@ async def sequencedump_command(client, message):
     finally:
         sequence_notified[user_id] = False
         await db.clear_user_sequence_queue(user_id)
+        await status_message.delete()
 
         if failed_files:
             await message.reply_text(f"Files sent, but some failed:\n" + "\n".join(failed_files))
