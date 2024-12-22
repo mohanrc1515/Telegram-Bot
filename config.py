@@ -238,5 +238,5 @@ Get Premium: Enhance your file renaming capabilities and enjoy the full potentia
 
 6. **/dumptextmode** : Set when to show messages: **Season**, **Quality**, **Both**, **Episode Batch**, **Custom Dump**.
    
-Here’s a demo showcasing the various modes in action. [Click Here](https://t.me/+J3B9fuhzC0w1NGU0)."""
+Here’s a demo showcasing the various modes in action. [Click Here](https://t.me/+aar-9BKME342YTJk)."""
 
