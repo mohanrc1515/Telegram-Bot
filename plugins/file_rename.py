@@ -708,11 +708,11 @@ async def sequencedump_command(client, message):
             failed_files = []
 
             for i in range(0, len(queue), batch_size):
-                batch = queue[i:i + batch_size]
+                batch = queue[i:i + batch_size]                
 
                 if start_message:
                     try:
-                        await send_custom_message(client, dump_channel, start_message, batch[0], batch[0], batch[-1])
+                        await send_custom_message(client, dump_channel, start_message, batch[-1], batch[0], batch[-1])
                     except Exception as e:
                         await message.reply_text(f"Failed to send start message: {e}")
                         continue
