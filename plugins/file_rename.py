@@ -702,11 +702,20 @@ async def sequencedump_command(client, message):
             if not batch_size:
                 return await message.reply_text("Batch size not set. Use /setbatch number to set batch size.")
 
+            if not queue:
+                return await message.reply_text("The file queue is empty. Please add files to the queue.")
+
+            failed_files = []
+
             for i in range(0, len(queue), batch_size):
-                batch = queue[i : i + batch_size]
+                batch = queue[i:i + batch_size]
 
                 if start_message:
-                    await send_custom_message(client, dump_channel, start_message, batch[0], batch[0], batch[-1])
+                    try:
+                        await send_custom_message(client, dump_channel, start_message, batch[0], batch[0], batch[-1])
+                    except Exception as e:
+                        await message.reply_text(f"Failed to send start message: {e}")
+                        continue
 
                 for file in batch:
                     try:
@@ -715,13 +724,18 @@ async def sequencedump_command(client, message):
                         failed_files.append(f"Failed to send file: {file['file_name']} (Error: {e})")
 
                 if end_message:
-                    await send_custom_message(client, dump_channel, end_message, batch[-1], batch[0], batch[-1])
+                    try:
+                        await send_custom_message(client, dump_channel, end_message, batch[-1], batch[0], batch[-1])
+                    except Exception as e:
+                        await message.reply_text(f"Failed to send end message: {e}")
+            if failed_files:
+                failure_report = "\n".join(failed_files)
+                await message.reply_text(f"The following files failed to send:\n{failure_report}")
 
         elif message_type == "both":
             previous_season = None
             quality_groups = {}
 
-            # Group files by season first, then by quality
             for item in queue:
                 season = item["season"]
                 quality = item["quality"]
