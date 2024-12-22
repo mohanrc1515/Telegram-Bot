@@ -238,6 +238,5 @@ Get Premium: Enhance your file renaming capabilities and enjoy the full potentia
 
 6. **/dumptextmode** : Set when to show messages: **Season**, **Quality**, **Both**, **Episode Batch**, **Custom Dump**.
    
-This determines whether you want to include dump messages before and after quality changes, season changes, or both, or you want them as bunch on same episode in multiple quality or after custom batch means after every 50 or 20 or whatever you choose the number of files. Use it and you'll understand what I mean."""
-
+Here’s a demo showcasing the various modes in action. [Click Here](https://t.me/+J3B9fuhzC0w1NGU0)."""
 
