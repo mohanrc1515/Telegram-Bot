@@ -8,18 +8,6 @@ pattern3_2 = re.compile(r'(?:\s*-\s*(\d+)\s*)')
 pattern4 = re.compile(r'S(\d+)[^\d]*(\d+)', re.IGNORECASE)
 patternX = re.compile(r'(\d+)')
 
-# Quality Patterns 
-pattern5 = re.compile(r'\b(?:.*?(\d{3,4}[^\dp]*p).*?|.*?(\d{3,4}p))\b', re.IGNORECASE)
-pattern6 = re.compile(r'[([<{]?\s*4k\s*[)\]>}]?', re.IGNORECASE)
-pattern7 = re.compile(r'[([<{]?\s*2k\s*[)\]>}]?', re.IGNORECASE)
-pattern8 = re.compile(r'[([<{]?\s*HdRip\s*[)\]>}]?|\bHdRip\b', re.IGNORECASE)
-pattern9 = re.compile(r'[([<{]?\s*4kX264\s*[)\]>}]?', re.IGNORECASE)
-pattern10 = re.compile(r'[([<{]?\s*4kx265\s*[)\]>}]?', re.IGNORECASE)
-pattern11 = re.compile(r'[([<{]?\s*8k\s*[)\]>}]?', re.IGNORECASE) # Added 8K support
-pattern12 = re.compile(r'[([<{]?\s*UHD\s*[)\]>}]?|\bUHD\b', re.IGNORECASE) # Added UHD support
-pattern13 = re.compile(r'[([<{]?\s*HQ\s*[)\]>}]?|\bHQ\b', re.IGNORECASE) # Added HQ support
-pattern14 = re.compile(r'[([<{]?\s*FHD\s*[)\]>}]?|\bFHD\b', re.IGNORECASE) # Added FHD support
-
 # Season Patterns 
 pattern11 = re.compile(r'S(\d+)(?:Season|S)(\d+)')
 pattern12 = re.compile(r'S(\d+)\s*(?:Season|S|-\s*S)(\d+)')
@@ -80,6 +68,24 @@ def extract_chapter_number(filename):
         return match.group(1)
     return None
 
+# Define exact patterns
+patterns = [
+    r'\b144p\b', r'\b240p\b', r'\b360p\b', r'\b480p\b', r'\b720p\b', r'\b1080p\b',
+    r'\b1440p\b', r'\b2160p\b', r'\b4320p\b', r'\bHDRip\b', r'\bWEB-DL\b',
+    r'\bWEBRip\b', r'\bDVDRip\b', r'\bBRRip\b', r'\bBDRip\b', r'\bHQ\b',
+    r'\bLQ\b', r'\bSDTV\b', r'\bHDR\b', r'\bDolby Vision\b', r'\bHEVC\b'
+]
+
+# Compile all patterns into a single regex
+quality_pattern = re.compile('|'.join(patterns), re.IGNORECASE)
+
+def extract_quality(filename):
+    # Search for a match in the filename
+    match = re.search(quality_pattern, filename)
+    if match:
+        return match.group()  # Return the exact match
+    return "Unknown"
+
 def extract_title(filename):
     # Remove any @username mentions and content within brackets
     filename = re.sub(r'@\S+', '', filename)
@@ -136,38 +142,6 @@ def extract_title(filename):
     return filename
     
 
-def extract_quality(filename):
-    match5 = re.search(pattern5, filename)
-    if match5:
-        return match5.group(1) or match5.group(2)
-    match6 = re.search(pattern6, filename)
-    if match6:
-        return "4k"
-    match7 = re.search(pattern7, filename)
-    if match7:
-        return "2k"
-    match8 = re.search(pattern8, filename)
-    if match8:
-        return "HdRip"
-    match9 = re.search(pattern9, filename)
-    if match9:
-        return "4kX264"
-    match10 = re.search(pattern10, filename)
-    if match10:
-        return "4kx265"
-    match11 = re.search(pattern11, filename) # Added 8K support
-    if match11:
-        return "8k"
-    match12 = re.search(pattern12, filename) # Added UHD support
-    if match12:
-        return "UHD"
-    match13 = re.search(pattern13, filename) # Added HQ support
-    if match13:
-        return "HQ"
-    match14 = re.search(pattern14, filename) # Added FHD support
-    if match14:
-        return "FHD"
-    return "Unknown"
 
 def extract_episode_number(filename):    
     match = re.search(pattern1, filename)
