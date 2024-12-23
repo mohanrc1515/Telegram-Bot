@@ -37,6 +37,30 @@ pattern_vol2 = re.compile(r'\b(?:V|Vol|Volume)[^\d]*(\d+(\.\d+)?)', re.IGNORECAS
 pattern_vol3 = re.compile(r'(?:[([<{]?\s*(?:V|Vol|Volume)\s*(\d+(\.\d+)?)\s*[)\]>}]?)', re.IGNORECASE)
 pattern_vol4 = re.compile(r'(?:\s*-\s*(\d+(\.\d+)?)\s*)', re.IGNORECASE)
 
+def extract_audio_language(filename):
+    match = re.search(pattern_lang1, filename)
+    if match:
+        return match.group()
+    match = re.search(pattern_lang2, filename)
+    if match:
+        return match.group()
+    match = re.search(pattern_lang3, filename)
+    if match:
+        return match.group()
+    match = re.search(pattern_lang4, filename)
+    if match:
+        return match.group()
+    match = re.search(pattern_lang5, filename)
+        return match.group()
+    match = re.search(pattern_lang_brackets, filename)
+    if match:
+        return match.group().strip('[](){}')
+    match = re.search(pattern_lang_combined, filename)
+    if match:
+        return match.group()
+    return "Unknown"
+
+
 def extract_volume_number(filename):
     match = re.search(pattern_vol1, filename)
     if match:
