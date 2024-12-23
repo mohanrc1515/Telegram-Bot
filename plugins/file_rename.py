@@ -223,7 +223,7 @@ async def handle_files(client: Client, message: Message):
     file_name = file_info['file_name']
     file_type = file_info['file_type']
     episode = extract_episode_number(file_name)
-    season = extract_season_number(file_name)
+    season = extract_season(file_name)
     audio = extract_audio_language(file_name)
     quality = extract_quality(file_name)
     volume = extract_volume_number(file_name)
