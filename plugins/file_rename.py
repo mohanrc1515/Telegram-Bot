@@ -222,13 +222,13 @@ async def handle_files(client: Client, message: Message):
     file_id = file_info['file_id']
     file_name = file_info['file_name']
     file_type = file_info['file_type']
-    episode = extract_episode_number(filename)
-    season = extract_season_number(filename)
-    audio = extract_audio_language(filename)
-    quality = extract_quality(filename)
-    volume = extract_volume_number(filename)
-    chapter = extract_chapter_number(filename)
-    title = extract_title(filename)
+    episode = extract_episode_number(file_name)
+    season = extract_season_number(file_name)
+    audio = extract_audio_language(file_name)
+    quality = extract_quality(file_name)
+    volume = extract_volume_number(file_name)
+    chapter = extract_chapter_number(file_name)
+    title = extract_title(file_name)
 
     print(f"Original File Name: {file_name}")
     print(f"Title: {title}")
