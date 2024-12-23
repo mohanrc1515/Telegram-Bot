@@ -51,6 +51,7 @@ def extract_audio_language(filename):
     if match:
         return match.group()
     match = re.search(pattern_lang5, filename)
+    if match:
         return match.group()
     match = re.search(pattern_lang_brackets, filename)
     if match:
@@ -60,7 +61,7 @@ def extract_audio_language(filename):
         return match.group()
     return "Unknown"
 
-
+# Function to extract volume number
 def extract_volume_number(filename):
     match = re.search(pattern_vol1, filename)
     if match:
@@ -76,6 +77,7 @@ def extract_volume_number(filename):
         return match.group(1)
     return None
 
+# Function to extract season
 def extract_season(filename):
     match = re.search(pattern11, filename)
     if match:
@@ -96,7 +98,8 @@ def extract_season(filename):
     if match:
         return match.group(1)
     return None
-    
+
+# Function to extract chapter number
 def extract_chapter_number(filename):
     match = re.search(pattern_ch1, filename)
     if match:
@@ -112,6 +115,7 @@ def extract_chapter_number(filename):
         return match.group(1)
     return None
 
+# Function to extract quality
 def extract_quality(filename):
     quality_patterns = [
         r'\b144p\b', r'\b240p\b', r'\b360p\b', r'\b480p\b', r'\b720p\b', r'\b1080p\b',
