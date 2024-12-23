@@ -222,8 +222,22 @@ async def handle_files(client: Client, message: Message):
     file_id = file_info['file_id']
     file_name = file_info['file_name']
     file_type = file_info['file_type']
+    episode = extract_episode_number(filename)
+    season = extract_season_number(filename)
+    audio = extract_audio_language(filename)
+    quality = extract_quality(filename)
+    volume = extract_volume_number(filename)
+    chapter = extract_chapter_number(filename)
+    title = extract_title(filename)
 
     print(f"Original File Name: {file_name}")
+    print(f"Title: {title}")
+    print(f"Season: {season}")
+    print(f"Episode: {episode}")
+    print(f"Audio Language: {audio}")
+    print(f"Quality: {quality}")
+    print(f"Volume: {volume}")
+    print(f"Chapter: {chapter}")
 
     if file_id in renaming_operations:
         elapsed_time = (datetime.now() - renaming_operations[file_id]).seconds
@@ -302,11 +316,6 @@ async def handle_files(client: Client, message: Message):
         else:
             await asyncio.sleep(1.5)
             await download_msg.edit("Processing....  ⚡")
-            await asyncio.sleep(2)
-            await increment_user_file_count(user_id)
-            await asyncio.sleep(2)
-            await increment_global_stats(message)
-            await asyncio.sleep(1.5)
         
         duration = 0
         try:
@@ -319,7 +328,7 @@ async def handle_files(client: Client, message: Message):
         try:
             upload_msg = await download_msg.edit("Trying To Upload...⚡")
         except FloodWait as e:
-            await asyncio.sleep(e.value)  # Wait dynamically if FloodWait error occurs
+            await asyncio.sleep(e.value)
             upload_msg = await download_msg.edit("Trying To Upload...⚡")  # Retry edit
                 
         ph_path = None
