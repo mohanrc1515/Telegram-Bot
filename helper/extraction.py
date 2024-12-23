@@ -52,6 +52,27 @@ def extract_volume_number(filename):
         return match.group(1)
     return None
 
+def extract_season_number(filename):
+    match = re.search(pattern11, filename)
+    if match:
+        return match.group(1)
+    match = re.search(pattern12, filename)
+    if match:
+        return match.group(1)
+    match = re.search(pattern13, filename)
+    if match:
+        return match.group(1)
+    match = re.search(pattern13_2, filename)
+    if match:
+        return match.group(1)
+    match = re.search(pattern14, filename)
+    if match:
+        return match.group(1)
+    match = re.search(patterny, filename)
+    if match:
+        return match.group(1)
+    return None
+    
 def extract_chapter_number(filename):
     match = re.search(pattern_ch1, filename)
     if match:
