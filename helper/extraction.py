@@ -1,20 +1,20 @@
 import re
 
-# Episode patterns
-pattern1 = re.compile(r'S(\d+)(?:E|EP)(\d+)')
-pattern2 = re.compile(r'S(\d+)\s*(?:E|EP|-\s*EP)(\d+)')
-pattern3 = re.compile(r'(?:[([<{]?\s*(?:E|EP)\s*(\d+)\s*[)\]>}]?)')
-pattern3_2 = re.compile(r'(?:\s*-\s*(\d+)\s*)')
-pattern4 = re.compile(r'S(\d+)[^\d]*(\d+)', re.IGNORECASE)
-patternX = re.compile(r'(\d+)')
 
-# Season Patterns 
-pattern11 = re.compile(r'S(\d+)(?:Season|S)(\d+)')
-pattern12 = re.compile(r'S(\d+)\s*(?:Season|S|-\s*S)(\d+)')
-pattern13 = re.compile(r'(?:[([<{]?\s*(?:Season|S)\s*(\d+)\s*[)\]>}]?)')
-pattern13_2 = re.compile(r'(?:\s*-\s*(\d+)\s*)')
-pattern14 = re.compile(r'S(\d+)[^\d]*(\d+)', re.IGNORECASE)
-patterny = re.compile(r'(\d+)')
+# Season Patterns
+season_patterns = [
+    re.compile(r'[([{<]?\s*(?:Season|S)\s*(\d+)\s*[)\]>}]?', re.IGNORECASE),  # Matches "(S01)", "[Season02]", etc.
+    re.compile(r'\b(?:Season|S)(\d+)\b', re.IGNORECASE),  # Matches "S01", "Season02", etc.
+    re.compile(r'\b(?:Season|S)\s+(\d+)\b', re.IGNORECASE),  # Matches "Season 03", "S 04", etc.
+    re.compile(r'S(\d+)[^\d]', re.IGNORECASE),  # Matches "S01X" or "S01-", where S is followed by a number
+]
+
+# Episode Patterns
+episode_patterns = [
+    re.compile(r'S\d+[^\d]*(?:E|EP|Episode)?\s*(\d+)', re.IGNORECASE),  # Matches "S01E02", "S01 EP03", etc.
+    re.compile(r'(?:E|EP|Episode)?\s*[([{<]?\s*(\d+)\s*[)\]>}]?', re.IGNORECASE),  # Matches "(E02)", "[03]", etc.
+    re.compile(r'\b(\d{1,3})\b(?![pP])', re.IGNORECASE),  # Matches standalone numbers, excluding "p" or "P"
+]
 
 # Audio Language Patterns
 pattern_lang1 = re.compile(r'\b(?:Dual|Dub|Sub|MULTI|Multi|MULTI)\b', re.IGNORECASE)
@@ -73,28 +73,6 @@ def extract_volume_number(filename):
     if match:
         return match.group(1)
     match = re.search(pattern_vol4, filename)
-    if match:
-        return match.group(1)
-    return None
-
-# Function to extract season
-def extract_season(filename):
-    match = re.search(pattern11, filename)
-    if match:
-        return match.group(1)
-    match = re.search(pattern12, filename)
-    if match:
-        return match.group(1)
-    match = re.search(pattern13, filename)
-    if match:
-        return match.group(1)
-    match = re.search(pattern13_2, filename)
-    if match:
-        return match.group(1)
-    match = re.search(pattern14, filename)
-    if match:
-        return match.group(1)
-    match = re.search(patterny, filename)
     if match:
         return match.group(1)
     return None
@@ -169,20 +147,16 @@ def extract_title(filename):
     filename = ' '.join(filename.split()).strip() 
     return filename
 
+def extract_season(filename):
+    for pattern in season_patterns:
+        match = re.search(pattern, filename)
+        if match:
+            return match.group(1)
+    return None
+
 def extract_episode_number(filename):
-    match = re.search(pattern1, filename)
-    if match:
-        return match.group(2)
-    match = re.search(pattern2, filename)
-    if match:
-        return match.group(2)
-    match = re.search(pattern3, filename)
-    if match:
-        return match.group(1)
-    match = re.search(pattern3_2, filename)
-    if match:
-        return match.group(1)
-    match = re.search(pattern4, filename)
-    if match:
-        return match.group(2)
+    for pattern in episode_patterns:
+        match = re.search(pattern, filename)
+        if match:
+            return match.group(1)
     return None
