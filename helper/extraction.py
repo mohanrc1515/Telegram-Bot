@@ -137,21 +137,3 @@ def extract_episode_number(filename):
     if match:
         return match.group(2)
     return None
-
-# Example usage
-filename = "MyShow_S01E01_DualAudio_1080p_HinEng"
-episode = extract_episode_number(filename)
-season = extract_season_number(filename)
-audio = extract_audio_language(filename)
-quality = extract_quality(filename)
-volume = extract_volume_number(filename)
-chapter = extract_chapter_number(filename)
-title = extract_title(filename)
-
-print(f"Title: {title}")
-print(f"Season: {season}")
-print(f"Episode: {episode}")
-print(f"Audio Language: {audio}")
-print(f"Quality: {quality}")
-print(f"Volume: {volume}")
-print(f"Chapter: {chapter}")
