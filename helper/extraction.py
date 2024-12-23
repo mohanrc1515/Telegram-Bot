@@ -52,7 +52,7 @@ def extract_volume_number(filename):
         return match.group(1)
     return None
 
-def extract_season_number(filename):
+def extract_season(filename):
     match = re.search(pattern11, filename)
     if match:
         return match.group(1)
