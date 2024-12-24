@@ -62,6 +62,7 @@ def create_settings_buttons(settings):
 async def get_user_settings(user_id):
     dump_files = await db.get_dump_files(user_id)
     dump_channel = await db.get_dump_channel(user_id)
+    current_mode = await db.get_caption_preference(user_id) or "normal"  
     metadata_enabled = await db.get_meta(user_id)
     thumbnail_set = await db.get_thumbnail(user_id) is not None
     caption_set = await db.get_caption(user_id) is not None
