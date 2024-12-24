@@ -1,55 +1,42 @@
+import os
+import tempfile
+import requests
 from pyrogram import Client, filters
 from pyrogram.types import Message
-import requests
-import os
 
-# Path for storing temporary files
-TEMP_PATH = "downloads/"
+UPSCALE_API_URL = "YOUR_API_URL"  # Add your upscale API URL here
+API_KEY = "YOUR_API_KEY"  # Add your API key here
 
-# Replace with your API key from the chosen service
-API_KEY = "your_api_key_here"
-UPSCALE_API_URL = "https://api.deepai.org/api/super-resolution"  # Example API URL
-
-@Client.on_message(filters.command("upscale") & filters.private)
-async def upscale_handler(client: Client, message: Message):
-    await message.reply_text(
-        "Send me an image, and I'll enhance its quality!"
-    )
-
-@Client.on_message(filters.photo & filters.private)
-async def process_image(client: Client, message: Message):
-    if not message.photo:
+@Client.on_message(filters.command("upscale") & filters.reply & filters.private)
+async def upscale_image(client: Client, message: Message):
+    if not message.reply_to_message or not message.reply_to_message.photo:
+        await message.reply_text("Please reply to an image with the /upscale command.")
         return
 
     msg = await message.reply_text("Enhancing the image quality... Please wait!")
-    
-    # Download the photo
-    photo_file = await message.download(file_name=f"{TEMP_PATH}original_image.jpg")
-    
-    try:
-        # Enhance the image via API
-        enhanced_file = f"{TEMP_PATH}enhanced_image.jpg"
-        if upscale_with_api(photo_file, enhanced_file):
-            # Send the enhanced image
-            await message.reply_photo(
-                enhanced_file, caption="Here's your enhanced image!"
-            )
-            
-            await message.reply_document(
-                enhanced_file, caption="Here's your enhanced image as a document!"
-            )
-        else:
-            await message.reply_text("Failed to enhance the image. Please try again later.")
-    except Exception as e:
-        await message.reply_text(f"Error: {e}")
-    finally:
-        # Cleanup
-        if os.path.exists(photo_file):
-            os.remove(photo_file)
-        if os.path.exists(enhanced_file):
-            os.remove(enhanced_file)
-    
-    await msg.delete()
+
+    # Create a temporary directory
+    with tempfile.TemporaryDirectory() as temp_dir:
+        photo_file = await message.reply_to_message.download(file_name=os.path.join(temp_dir, "original_image.jpg"))
+        enhanced_file = os.path.join(temp_dir, "enhanced_image.jpg")
+
+        try:
+            # Enhance the image via API
+            if upscale_with_api(photo_file, enhanced_file):
+                # Send the enhanced image
+                await message.reply_photo(
+                    enhanced_file, caption="Here's your enhanced image!"
+                )
+
+                await message.reply_document(
+                    enhanced_file, caption="Here's your enhanced image as a document!"
+                )
+            else:
+                await message.reply_text("Failed to enhance the image. Please try again later.")
+        except Exception as e:
+            await message.reply_text(f"Error: {e}")
+        finally:
+            await msg.delete()
 
 
 def upscale_with_api(input_path: str, output_path: str) -> bool:
