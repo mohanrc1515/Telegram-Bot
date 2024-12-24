@@ -5,7 +5,7 @@ from PIL import Image
 from datetime import datetime
 from hachoir.metadata import extractMetadata
 from hachoir.parser import createParser
-from helper.utils import progress_for_pyrogram, humanbytes, convert
+from helper.utils import progress_for_pyrogram, humanbytes, convert, update_statistics
 from helper.database import db
 from helper.ffmpeg import *
 from helper.extraction import *
@@ -249,8 +249,8 @@ async def handle_files(client: Client, message: Message):
         download_msg = await message.reply_text(
             "Your file has been added to the queue and will be processed soon.",
             quote=True
-        )
-   
+        )    
+    
     async def task():
         await asyncio.sleep(2)
         await download_msg.edit("Processing... ⚡")
@@ -261,13 +261,17 @@ async def handle_files(client: Client, message: Message):
                 progress=progress_for_pyrogram,
                 progress_args=("Download Started....", download_msg, time.time())
             )
+            await asyncio.sleep(2)
+
+            file_size = file.file_size if file else 0
+            await update_statistics(message.chat.id, file_size)
+
         except FloodWait as e:
-            await asyncio.sleep(e.value)  # Wait dynamically based on the flood wait error
-            await task()  # Retry the task after the flood wait
+            await asyncio.sleep(e.value)
+            await task()
         except Exception as e:
-            # Mark the file as ignored
             del renaming_operations[file_id]
-            return await download_msg.edit(str(e))
+            return await download_msg.edit(f"Error: {str(e)}")
             
          # Metadata Adding Code
         _bool_metadata = await db.get_meta(message.chat.id)
