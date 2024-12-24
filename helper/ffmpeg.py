@@ -97,15 +97,14 @@ async def get_and_upload_mediainfo(bot, output_file, media):
 
 async def add_metadata(input_path, output_path, sub_title, sub_author, sub_subtitle, sub_audio, sub_video, sub_artist, download_msg):
     try:
-        #  await download_msg.edit("<i>I Found Metadata, Adding Into Your File ⚡</i>")
         command = [
             'ffmpeg', '-y', '-i', input_path, '-map', '0', '-c:s', 'copy', '-c:a', 'copy', '-c:v', 'copy',
-            '-metadata', f'title={sub_title}',  # Set title metadata
-            '-metadata', f'author={sub_author}',  # Set author metadata
-            '-metadata:s:s', f'title={sub_subtitle}',  # Set subtitle metadata
-            '-metadata:s:a', f'title={sub_audio}',  # Set audio metadata
-            '-metadata:s:v', f'title={sub_video}',  # Set video metadata
-            '-metadata', f'artist={sub_artist}',  # Set artist metadata
+            '-metadata', f'title={sub_title}',
+            '-metadata', f'author={sub_author}',
+            '-metadata:s:s', f'title={sub_subtitle}',
+            '-metadata:s:a', f'title={sub_audio}',
+            '-metadata:s:v', f'title={sub_video}',
+            '-metadata', f'artist={sub_artist}',
             output_path
         ]
 
