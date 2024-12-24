@@ -5,7 +5,7 @@ from PIL import Image
 from datetime import datetime
 from hachoir.metadata import extractMetadata
 from hachoir.parser import createParser
-from helper.utils import progress_for_pyrogram, humanbytes, convert, update_statistics
+from helper.utils import progress_for_pyrogram, humanbytes, convert
 from helper.database import db
 from helper.ffmpeg import *
 from helper.extraction import *
