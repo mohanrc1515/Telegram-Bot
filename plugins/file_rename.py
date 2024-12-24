@@ -629,6 +629,12 @@ async def sequencedump_command(client, message):
         )
     )
 
+    dump_channel = await db.get_dump_channel(user_id)
+    if not dump_channel:
+        return await message.reply_text("No dump channel found. Please connect it using /dump.")
+
+    status_message = await message.reply_text("Starting to send files in sequence to channel...")    
+
     first_item = queue[0]
     last_item = queue[-1]
 
