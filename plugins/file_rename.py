@@ -573,7 +573,7 @@ async def send_file(client, dump_channel, file):
         print(f"Failed to send {file['file_name']}: {e}")
 
 
-Client.on_message(filters.command("sequencedump") & filters.private)
+@Client.on_message(filters.command("sequencedump") & filters.private)
 async def sequencedump_command(client, message):
     user_id = message.from_user.id
 
