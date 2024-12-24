@@ -145,7 +145,7 @@ async def myplan(client: Client, message: Message):
             f"🕒 **Auth Duration:** `{str(duration_td)}`\n"
             f"📅 **Auth Start:** `{format_timestamp(start_time)}`\n"
             f"⏳ **Auth Expiry:** `{format_timestamp(expiry_time)}`\n\n"
-            f"✨ __Enjoy your premium features and benefits!__"
+            f"__Enjoy your premium features and benefits!__"
         )
 
         # Close button
