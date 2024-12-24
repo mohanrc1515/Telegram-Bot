@@ -5,9 +5,9 @@ from helper.utils import user_mention
 
 @Client.on_message(filters.command("leaderboard"))
 async def leaderboard_command(client, message):
-    top_users = await db.get_top_users_by_file_count(10)  # Get top 10 users by file count
+    top_users = await db.get_top_users_by_file_count(10)
     user_id = message.from_user.id
-    user_count = await db.get_file_count(user_id)  # Fetch total file count for the current user
+    user_count = await db.get_file_count(user_id)
       
     if not top_users:
         await message.reply("No users have renamed files yet.")
@@ -22,7 +22,7 @@ async def leaderboard_command(client, message):
         user_details = await client.get_users(user_id)
         first_name = user_details.first_name if user_details else "Unknown"
         
-        user_mention = f"[{first_name}](tg://user?id={user_id})"  # Create mention link with first name
+        user_mention = f"[{first_name}](tg://user?id={user_id})"
         leaderboard_message += f"{rank}. {user_mention} - {file_count} files\n"
     
     # Add thank you message
@@ -44,7 +44,7 @@ async def top_referrals(client, message):
             await message.reply("No referrers found.")
             return
 
-        top_referrers_message = "🎉 **Top Referrers** 🎉\n\n"
+        top_referrers_message = "<u>⚡ **Top Referrers** ⚡</u>\n\n"
         for rank, referrer in enumerate(top_referrers, start=1):
             referrer_id = referrer.get("_id")
             referrer_count = referrer.get("referral_count", 0)
