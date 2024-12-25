@@ -18,12 +18,11 @@ async def leaderboard_command(client, message):
         user_id = user['_id']
         file_count = user.get('file_count', 0)
         
-        # Fetch user details to get the first name
         user_details = await client.get_users(user_id)
         first_name = user_details.first_name if user_details else "Unknown"
         
-        user_mention = f"[{first_name}](tg://user?id={user_id})"
-        leaderboard_message += f"{rank}. {user_mention} - {file_count} files\n"
+        user_mention = f"{rank}. {first_name} - {file_count} files\n"
+        leaderboard_message += user_mention
     
     # Add thank you message
     leaderboard_message += f"\n⚡ Your File Count: {user_count}\n\nThanks for using the bot! 🚀"
@@ -31,7 +30,7 @@ async def leaderboard_command(client, message):
     support_button = InlineKeyboardButton("Bots Channel", url="https://t.me/Elites_Bots")
     keyboard = InlineKeyboardMarkup([[support_button]])
 
-    await message.reply(leaderboard_message, reply_markup=keyboard)
+    await message.reply(leaderboard_message, reply_markup=keyboard, parse_mode=None)
    
 @Client.on_message(filters.command("top_referrals"))
 async def top_referrals(client, message):
@@ -58,8 +57,9 @@ async def top_referrals(client, message):
                     first_name = "Unknown"
                     print(f"Error fetching user details: {e}")
 
-                user_mention_text = f"[{first_name}](tg://user?id={referrer_id})"  # Create mention link with first name
-                top_referrers_message += f"{rank}. {user_mention_text} - {referrer_count} referrals\n"
+                # Avoid mentions by not creating links
+                referrer_text = f"{rank}. {first_name} - {referrer_count} referrals\n"
+                top_referrers_message += referrer_text
 
         # Add thank you message
         top_referrers_message += f"\nYour Referral Count: {referral_count}"
@@ -67,7 +67,7 @@ async def top_referrals(client, message):
         support_button = InlineKeyboardButton("Support Group", url="https://t.me/Elites_Assistance")
         keyboard = InlineKeyboardMarkup([[support_button]])
 
-        await message.reply(top_referrers_message, reply_markup=keyboard)
+        await message.reply(top_referrers_message, reply_markup=keyboard, parse_mode=None)
     except Exception as e:
         print(f"Error: {e}")
         await message.reply("An error occurred while fetching the top referrers.")
