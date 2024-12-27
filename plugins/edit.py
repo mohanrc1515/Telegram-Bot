@@ -23,6 +23,8 @@ async def edit_image(client: Client, message: Message):
         await processing_message.edit_text("❌ Failed to download the image. Please try again.")
         return
 
+    edited_path = None  # Ensure this is initialized before use
+
     try:
         # Send the image to the API with additional text prompt if needed
         with open(image_path, "rb") as image_file:
@@ -53,8 +55,9 @@ async def edit_image(client: Client, message: Message):
         await processing_message.edit_text(f"❌ An error occurred: {e}")
 
     finally:
-        # Clean up temporary files
+        # Clean up temporary files, ensuring edited_path is checked only if it was assigned
         if os.path.exists(image_path):
             os.remove(image_path)
-        if os.path.exists(edited_path):
+        if edited_path and os.path.exists(edited_path):
             os.remove(edited_path)
+            
