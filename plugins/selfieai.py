@@ -7,11 +7,11 @@ import os
 API_URL = "https://api.deepai.org/api/ai-selfie-generator"
 API_KEY = "618a0be5-1f50-4a2d-876b-ed3f10f479f7"
 
-@Client.on_message(filters.command("selfie"))
+@Client.on_message(filters.command("modify"))
 async def generate_ai_selfie(client: Client, message: Message):
     # Check if the command is replied to an image
     if not message.reply_to_message or not message.reply_to_message.photo:
-        await message.reply_text("⚠️ Please reply to an image with **/selfie** and add a text prompt to generate your AI portrait.")
+        await message.reply_text("⚠️ Please reply to an image with **/modify** and add a text prompt to generate your AI portrait.")
         return
 
     # Get the optional text prompt
@@ -52,7 +52,7 @@ async def generate_ai_selfie(client: Client, message: Message):
 
         # Send the AI-generated selfie to the user
         await processing_message.delete()
-        await message.reply_photo(selfie_path, caption="🤳 Here is your stunning AI-generated selfie!")
+        await message.reply_photo(selfie_path, caption="Here is your modified AI-generated image")
         await message.reply_document(selfie_path, caption="📂 AI Selfie in file format.")
 
     except Exception as e:
