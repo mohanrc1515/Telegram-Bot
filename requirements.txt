@@ -14,3 +14,4 @@ humanize
 html_telegraph_poster
 lxml_html_clean
 ffmpeg
+requests
