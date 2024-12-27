@@ -48,8 +48,8 @@ async def colorize_image(client: Client, message: Message):
 
         # Send the colorized image to the user
         await processing_message.delete()
-        await message.reply_photo(colorized_image_path, caption="🌈 Here is your colorized image!")
-        await message.reply_document(colorized_image_path, caption="📂 Colorized image in file format.")
+        await message.reply_photo(colorized_image_path, caption="Here is your colorized image!")
+      #  await message.reply_document(colorized_image_path, caption="📂 Colorized image in file format.")
 
     except Exception as e:
         await processing_message.edit_text(f"❌ An error occurred: {e}")
