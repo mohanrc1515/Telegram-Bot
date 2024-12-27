@@ -1,0 +1,62 @@
+import requests
+from pyrogram import Client, filters
+from pyrogram.types import Message
+import os
+
+# DeepAI API details
+API_URL = "https://api.deepai.org/api/waifu2x"
+API_KEY = "618a0be5-1f50-4a2d-876b-ed3f10f479f7"
+
+@Client.on_message(filters.command("waifu"))
+async def upscale_image(client: Client, message: Message):
+    # Check if the command is replied to an image
+    if not message.reply_to_message or not message.reply_to_message.photo:
+        await message.reply_text("⚠️ Please reply to an image with **/waifu** to upscale and denoise it.")
+        return
+
+    # Notify the user that the process is starting
+    processing_message = await message.reply_text("🔄 Upscaling and denoising your image, please wait...")
+
+    # Download the image
+    image_path = await client.download_media(message.reply_to_message.photo.file_id)
+    if not image_path:
+        await processing_message.edit_text("❌ Failed to download the image. Please try again.")
+        return
+
+    upscaled_path = None  # Initialize variable
+
+    try:
+        # Send the image to the API
+        with open(image_path, "rb") as image_file:
+            response = requests.post(
+                API_URL,
+                headers={"api-key": API_KEY},
+                files={"image": image_file}
+            )
+
+        result = response.json()
+        if "output_url" not in result:
+            await processing_message.edit_text("❌ Failed to upscale the image. Please try again later.")
+            return
+
+        # Download the upscaled image
+        upscaled_url = result["output_url"]
+        upscaled_path = "upscaled_image.jpg"
+        upscaled_data = requests.get(upscaled_url).content
+        with open(upscaled_path, "wb") as file:
+            file.write(upscaled_data)
+
+        # Send the upscaled image to the user
+        await processing_message.delete()
+        await message.reply_photo(upscaled_path, caption="✨ Here is your upscaled and denoised image!")
+        await message.reply_document(upscaled_path, caption="📂 Upscaled image in file format.")
+
+    except Exception as e:
+        await processing_message.edit_text(f"❌ An error occurred: {e}")
+
+    finally:
+        # Clean up temporary files
+        if os.path.exists(image_path):
+            os.remove(image_path)
+        if upscaled_path and os.path.exists(upscaled_path):
+            os.remove(upscaled_path)
