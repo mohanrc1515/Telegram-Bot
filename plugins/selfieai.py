@@ -53,7 +53,7 @@ async def generate_ai_selfie(client: Client, message: Message):
         # Send the AI-generated selfie to the user
         await processing_message.delete()
         await message.reply_photo(selfie_path, caption="Here is your modified AI-generated image")
-        await message.reply_document(selfie_path, caption="📂 AI Selfie in file format.")
+     #   await message.reply_document(selfie_path, caption="📂 AI Selfie in file format.")
 
     except Exception as e:
         await processing_message.edit_text(f"❌ An error occurred: {e}")
