@@ -47,7 +47,7 @@ async def edit_image(client: Client, message: Message):
         # Send the edited image to the user
         await processing_message.delete()
         await message.reply_photo(edited_path, caption="✨ Here is your edited image!")
-        await message.reply_document(edited_path, caption="📂 Edited image in file format.")
+      #  await message.reply_document(edited_path, caption="📂 Edited image in file format.")
 
     except Exception as e:
         await processing_message.edit_text(f"❌ An error occurred: {e}")
