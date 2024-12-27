@@ -1,3 +1,4 @@
+from pyrogram import Client, filters
 import psutil
 from asyncio import sleep
 from config import Config
