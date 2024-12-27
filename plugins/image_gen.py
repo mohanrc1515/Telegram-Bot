@@ -45,7 +45,7 @@ async def generate_image(client: Client, message: Message):
         # Send the generated image to the user
         await processing_message.delete()
         await message.reply_photo(generated_image_path, caption=f"✨ Here is your generated image for:\n**{description}**")
-        await message.reply_document(generated_image_path, caption="📂 Generated image in file format.")
+     #   await message.reply_document(generated_image_path, caption="📂 Generated image in file format.")
 
     except Exception as e:
         await processing_message.edit_text(f"❌ An error occurred: {e}")
