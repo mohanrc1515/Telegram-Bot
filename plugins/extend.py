@@ -49,7 +49,7 @@ async def extend_image(client: Client, message: Message):
         # Send the expanded image to the user
         await processing_message.delete()
         await message.reply_photo(expanded_image_path, caption="✨ Here is your expanded image!")
-        await message.reply_document(expanded_image_path, caption="📂 Expanded image in file format.")
+      #  await message.reply_document(expanded_image_path, caption="📂 Expanded image in file format.")
 
     except Exception as e:
         await processing_message.edit_text(f"❌ An error occurred: {e}")
