@@ -20,6 +20,8 @@ async def generate_image(client: Client, message: Message):
     # Notify the user that the generation process has started
     processing_message = await message.reply_text(f"🔄 Generating an image for: **{description}**\nPlease wait...")
 
+    generated_image_path = None  # Ensure the variable is initialized here
+
     try:
         # Send the description to the API
         response = requests.post(
@@ -49,6 +51,6 @@ async def generate_image(client: Client, message: Message):
         await processing_message.edit_text(f"❌ An error occurred: {e}")
 
     finally:
-        # Clean up temporary files
-        if os.path.exists(generated_image_path):
+        # Clean up temporary files if the path is defined
+        if generated_image_path and os.path.exists(generated_image_path):
             os.remove(generated_image_path)
