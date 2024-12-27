@@ -23,6 +23,8 @@ async def extend_image(client: Client, message: Message):
         await processing_message.edit_text("❌ Failed to download the image. Please try again.")
         return
 
+    expanded_image_path = None  # Initialize variable
+
     try:
         # Send the image to the API
         with open(download_path, "rb") as image_file:
@@ -56,5 +58,6 @@ async def extend_image(client: Client, message: Message):
         # Clean up temporary files
         if os.path.exists(download_path):
             os.remove(download_path)
-        if os.path.exists(expanded_image_path):
+        if expanded_image_path and os.path.exists(expanded_image_path):
             os.remove(expanded_image_path)
+            
