@@ -49,7 +49,7 @@ async def upscale_image(client: Client, message: Message):
         # Send the upscaled image to the user
         await processing_message.delete()
         await message.reply_photo(upscaled_path, caption="✨ Here is your upscaled and denoised image!")
-        await message.reply_document(upscaled_path, caption="📂 Upscaled image in file format.")
+      #  await message.reply_document(upscaled_path, caption="📂 Upscaled image in file format.")
 
     except Exception as e:
         await processing_message.edit_text(f"❌ An error occurred: {e}")
