@@ -46,8 +46,8 @@ async def remove_background(client: Client, message: Message):
 
         # Send the processed image to the user
         await processing_message.delete()
-        await message.reply_photo(bg_removed_path, caption="✨ Here is your image with the background removed!")
-        await message.reply_document(bg_removed_path, caption="📂 Background removed image in file format.")
+        await message.reply_photo(bg_removed_path, caption="Here is your image with the background removed!")
+      #  await message.reply_document(bg_removed_path, caption="📂 Background removed image in file format.")
 
     except Exception as e:
         await processing_message.edit_text(f"❌ An error occurred: {e}")
