@@ -46,7 +46,7 @@ class Bot(Client):
             await self.send_photo(
                 chat_id=chat_id,
                 photo="https://envs.sh/o-0.jpg",
-                caption=f"**Bot Has Been Restarted**\n\n📅 Date: `{date}`\n⏰ Time: `{time}`\n🌐 Timezone: `Asia/Kolkata`\n\n🉐 Version: `v{__version__} (Layer {layer})`"
+                caption=f"**Bot Has Been Restarted**\n\n📅 Date: `{date}`\n⏰ Time: `{time}`\n🌐 Timezone: `Asia/Kolkata`"
             )
         except Exception as e:
             print(f"Failed to send message to chat {chat_id}: {e}")
