@@ -17,13 +17,17 @@ async def upscale_image(client: Client, message: Message):
     # Notify the user that processing has started
     processing_message = await message.reply_text("🔄 Processing your image, please wait...")
 
-    # Download the image
-    download_path = await client.download_media(message.reply_to_message.photo.file_id)
-    if not download_path:
-        await processing_message.edit_text("❌ Failed to download the image. Please try again.")
-        return
+    # Initialize variables for cleanup
+    download_path = None
+    enhanced_image_path = None
 
     try:
+        # Download the image
+        download_path = await client.download_media(message.reply_to_message.photo.file_id)
+        if not download_path:
+            await processing_message.edit_text("❌ Failed to download the image. Please try again.")
+            return
+
         # Send the image to the API
         with open(download_path, "rb") as image_file:
             response = requests.post(
@@ -31,6 +35,11 @@ async def upscale_image(client: Client, message: Message):
                 headers={"api-key": API_KEY},
                 files={"image": image_file}
             )
+
+        # Check if the response was successful
+        if response.status_code != 200:
+            await processing_message.edit_text("❌ Error with API request. Please try again later.")
+            return
 
         result = response.json()
         if "output_url" not in result:
@@ -47,14 +56,13 @@ async def upscale_image(client: Client, message: Message):
         # Send the enhanced image
         await processing_message.delete()
         await message.reply_photo(enhanced_image_path, caption="Here is your enhanced image!")
-        #await message.reply_document(enhanced_image_path, caption="📂 Enhanced image in file format.")
 
     except Exception as e:
         await processing_message.edit_text(f"❌ An error occurred: {e}")
 
     finally:
         # Clean up temporary files
-        if os.path.exists(download_path):
+        if download_path and os.path.exists(download_path):
             os.remove(download_path)
-        if os.path.exists(enhanced_image_path):
+        if enhanced_image_path and os.path.exists(enhanced_image_path):
             os.remove(enhanced_image_path)
