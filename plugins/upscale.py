@@ -4,8 +4,8 @@ from pyrogram.types import Message
 import os
 
 # DeepAI API details
-API_URL = "https://api.deepai.org/api/torch-srgan"
-API_KEY = "618a0be5-1f50-4a2d-876b-ed3f10f479f7"
+API_URL = "https://deep-image.ai/rest_api/process_result"
+API_KEY = "8a924950-c826-11ef-a1c6-c3999b4db0de"
 
 @Client.on_message(filters.command("upscale"))
 async def upscale_image(client: Client, message: Message):
