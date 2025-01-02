@@ -33,7 +33,7 @@ def get_user_queue(user_id):
 # Function to get or create the semaphore for each user
 def get_user_semaphore(user_id):
     if user_id not in user_semaphores:
-        user_semaphores[user_id] = Semaphore(5)
+        user_semaphores[user_id] = Semaphore(3)
     return user_semaphores[user_id]
 
 async def process_task(user_id, task):
@@ -509,7 +509,9 @@ async def handle_files(client: Client, message: Message):
                 await upload_msg.delete()
                 if os.path.exists(file_path):
                     os.remove(file_path)
+                    os.remove(file_path)
                 if ph_path and os.path.exists(ph_path):
+                    os.remove(ph_path)
                     os.remove(ph_path)
         del renaming_operations[file_id]
         
