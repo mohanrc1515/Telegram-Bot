@@ -509,9 +509,7 @@ async def handle_files(client: Client, message: Message):
                 await upload_msg.delete()
                 if os.path.exists(file_path):
                     os.remove(file_path)
-                    os.remove(file_path)
                 if ph_path and os.path.exists(ph_path):
-                    os.remove(ph_path)
                     os.remove(ph_path)
         del renaming_operations[file_id]
         
