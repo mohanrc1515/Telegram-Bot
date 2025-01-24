@@ -350,7 +350,7 @@ async def handle_files(client: Client, message: Message):
             file_size = message.document.file_size
         elif message.video:
             file_size = message.video.file_size
-        duration = message.video.duration
+            duration = message.video.duration
         elif message.audio:
             file_size = message.audio.file_size
             duration = message.audio.duration
