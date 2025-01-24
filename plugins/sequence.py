@@ -37,17 +37,17 @@ async def end_sequence(client, message: Message):
 
     # Sort the files based on volume, season, chapter, and episode
     queue.sort(key=lambda x: (
-        x.get('volume', 0),    # Prioritize by volume
-        x.get('season', 0),    # Then by season
-        x.get('chapter', 0),   # Then by chapter
-        x.get('episode', 0)    # Finally by episode
+        x.get('volume', 0),
+        x.get('season', 0),
+        x.get('chapter', 0),
+        x.get('episode', 0)
     ))
 
     # Send sorted files back to the user
     for item in queue:
         file_type = item.get('file_type', 'document')
         file_id = item['file_id']
-        caption = item.get('file_name', 'No name available')
+        caption = item.get('caption', 'No name available')
         
         if file_type == 'video':
             await client.send_video(chat_id=message.chat.id, video=file_id, caption=caption)
