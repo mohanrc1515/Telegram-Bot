@@ -139,15 +139,22 @@ async def handle_files(client: Client, message: Message):
     if not await db.is_user_authorized(user_id):
         await message.reply_text(Config.USER_REPLY)
         return
-        
+    
     if await db.is_user_sequence_mode(user_id):
         file_name = None
+        caption_text = message.caption if message.caption else None  # Capture the caption
+
         if message.document:
             file_name = message.document.file_name
         elif message.video:
             file_name = message.video.file_name
         elif message.audio:
             file_name = message.audio.file_name
+    
+        # Handle .mp4 and .mkv video files
+        if file_name and (file_name.endswith('.mp4') or file_name.endswith('.mkv')):
+            if message.video:
+                file_name = message.video.file_name
 
         if file_name:
             season = extract_season(file_name) or 0
@@ -160,6 +167,7 @@ async def handle_files(client: Client, message: Message):
                     message.document.file_id if message.document else 
                     (message.video.file_id if message.video else message.audio.file_id)
                 )
+            # Include caption information when adding to the queue
                 await db.add_to_sequence_queue(user_id, {
                     'file_id': file_id,
                     'file_name': file_name,
@@ -167,7 +175,8 @@ async def handle_files(client: Client, message: Message):
                     'episode': int(episode),
                     'volume': int(volume),
                     'chapter': int(chapter),
-                    'file_type': 'document' if message.document else ('video' if message.video else 'audio')
+                    'file_type': 'document' if message.document else ('video' if message.video else 'audio'),
+                    'caption': caption_text
                 })
                 await message.reply_text("The file has been successfully received and integrated into the sequencing.")
             else:
@@ -175,6 +184,7 @@ async def handle_files(client: Client, message: Message):
         else:
             await message.reply_text("File name could not be determined.")
         return
+        
         
     if user_id in thumbnail_extraction_mode and thumbnail_extraction_mode[user_id]:
         file = message.document or message.video or message.audio
