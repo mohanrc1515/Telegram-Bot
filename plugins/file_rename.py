@@ -342,12 +342,30 @@ async def handle_files(client: Client, message: Message):
         ph_path = None
         c_thumb = await db.get_thumbnail(message.chat.id)                
         c_caption = await db.get_caption(message.chat.id)
-        caption = c_caption.format(filename=new_file_name, filesize=humanbytes(message.document.file_size), duration=convert(duration)) if c_caption else f"{new_file_name}"
-        caption_mode = await db.get_caption_preference(message.chat.id) or "normal" 
 
+        file_size = None
+        duration = None
+
+        if message.document:
+            file_size = message.document.file_size
+        elif message.video:
+            file_size = message.video.file_size
+        duration = message.video.duration
+        elif message.audio:
+            file_size = message.audio.file_size
+            duration = message.audio.duration
+
+        # Format the caption based on file size and duration
+        caption = c_caption.format(
+            filename=new_file_name,
+            filesize=humanbytes(file_size) if file_size else "Unknown",
+            duration=convert(duration) if duration else "N/A"
+        ) if c_caption else f"{new_file_name}"
+
+        caption_mode = await db.get_caption_preference(message.chat.id) or "normal"
         if c_caption:
             if caption_mode == "normal":
-                caption = caption  # No special formatting
+                caption = caption
             elif caption_mode == "bold":
                 caption = f"**{caption}**"
             elif caption_mode == "italic":
