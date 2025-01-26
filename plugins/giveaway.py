@@ -154,11 +154,11 @@ async def select_winner(client, message):
 
         # Reply with the formatted winner message
         await message.reply(
-            f"🏆 Victory Unleashed 🏆\n\n"
-            f"**Winner:** {winner_first_name}\n"
-            f"**Username:** @{winner_username}\n"
-            f"**ID:** <code>{winner_user_id}</code>\n\n"
-            f"Congrats 🎉"
+            f"🏆 **Winner Announcement** 🏆\n\n"
+            f"**👤 Name:** {winner_first_name}\n"
+            f"**🔗 Username:** @{winner_username}\n"
+            f"**🆔 ID:** <code>{winner_user_id}</code>\n\n"
+            f"Congrats, You've won 🎉"
         )
     else:
         await message.reply("No participants found in the giveaway.")
