@@ -122,3 +122,66 @@ async def callback_query_handler(client, callback_query):
         await callback_query.answer(f"Media preference set to: {media_type.capitalize()}")
     except Exception as e:
         await callback_query.message.edit_text(f"An unexpected error occurred: {e}")
+
+
+@Client.on_message(filters.command("mode") & filters.private)
+async def set_mode(client, message):
+    user_id = message.from_user.id
+    current_mode = await db.get_mode(user_id)
+    if not current_mode:
+        current_mode = "Manual Rename"
+
+    # Prepare the inline buttons with indicators
+    manual_rename_btn = "✅ Manual Renaming" if current_mode == "Manual Rename" else "Manual Renaming"
+    auto_rename_btn = "✅ Auto Renaming" if current_mode == "Auto Rename" else "Auto Renaming"
+
+    buttons = [
+        [
+            InlineKeyboardButton(manual_rename_btn, callback_data="set_mode_manual"),
+            InlineKeyboardButton(auto_rename_btn, callback_data="set_mode_auto"),
+        ]
+    ]
+
+    # Send the message with buttons
+    await message.reply_text(
+        "Select your preferred mode:",
+        reply_markup=InlineKeyboardMarkup(buttons),
+    )
+
+
+@Client.on_callback_query(filters.regex("set_mode_"))
+async def handle_mode_selection(client, callback_query):
+    user_id = callback_query.from_user.id
+    data = callback_query.data
+
+    # Determine the selected mode
+    if data == "set_mode_manual":
+        new_mode = "Manual Rename"
+    elif data == "set_mode_auto":
+        new_mode = "Auto Rename"
+    else:
+        await callback_query.answer("Invalid selection.", show_alert=True)
+        return
+
+    # Update the mode in the database
+    await db.set_user_attr(user_id, "mode", new_mode)
+
+    # Prepare the updated buttons
+    manual_rename_btn = "✅ Manual Renaming" if new_mode == "Manual Rename" else "Manual Renaming"
+    auto_rename_btn = "✅ Auto Renaming" if new_mode == "Auto Rename" else "Auto Renaming"
+
+    buttons = [
+        [
+            InlineKeyboardButton(manual_rename_btn, callback_data="set_mode_manual"),
+            InlineKeyboardButton(auto_rename_btn, callback_data="set_mode_auto"),
+        ]
+    ]
+
+    # Edit the original message with updated buttons
+    await callback_query.message.edit_text(
+        "Select your preferred mode:",
+        reply_markup=InlineKeyboardMarkup(buttons),
+    )
+
+    # Notify the user of the updated mode
+    await callback_query.answer(f"Mode updated to {new_mode}.", show_alert=True)
