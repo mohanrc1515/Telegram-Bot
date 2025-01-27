@@ -163,3 +163,14 @@ def add_prefix_suffix(input_string, prefix='', suffix=''):
 
     else:
         return input_string
+
+
+def makedir(name: str):
+    """
+    Create a directory with the specified name.
+    If a directory with the same name already exists, it will be removed and a new one will be created.
+    """
+
+    if os.path.exists(name):
+        shutil.rmtree(name)
+    os.mkdir(name)
