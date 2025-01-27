@@ -101,16 +101,21 @@ async def doc(bot, update):
     file_path = f"downloads/{update.from_user.id}/{new_filename}"
     file = update.message.reply_to_message
 
-    ms = await update.message.edit("🚀 Downloading... ⚡")    
+    ms = await update.message.edit("🚀 Try To Download...  ⚡")    
     try:
         path = await bot.download_media(
             message=file, 
             file_name=file_path, 
             progress=progress_for_pyrogram,
-            progress_args=("🚀 Downloading... ⚡", ms, time.time())
-        )                    
+            progress_args=("🚀 Try To Downloading...  ⚡", ms, time.time())
+        )
+        
+        # Add the line to update statistics after the download is completed
+        file_size = file.file_size if file else 0
+        await update_statistics(message.chat.id, file_size)
+    
     except Exception as e:
-        return await ms.edit(str(e))
+        return await ms.edit(e)      
     
     _bool_metadata = await db.get_meta(update.message.chat.id)
     if _bool_metadata:
