@@ -55,7 +55,7 @@ class Database:
             "referral_points": 0,
             "metadata": False,
             "file_count": 0,
-            "mode": "Auto Rename"
+            "mode": False  # Default mode is Auto Rename (False)
 	}
 
     async def add_user(self, client, message):
@@ -489,17 +489,23 @@ class Database:
     # Fetch the user's mode
     async def get_mode(self, user_id):
         user = await self.user_col.find_one({"_id": int(user_id)})
-        if user:
-            return user.get("mode", "Auto Rename")
-        return "Auto Rename"
+        if user and "mode" in user:
+            return user["mode"]
+        return False  # Default to Auto Rename if mode is not set
 
-   # Update the user's mode
     async def set_mode(self, user_id, mode):
-        await self.user_col.update_one(
-            {"_id": int(user_id)},
-            {"$set": {"mode": mode}},
-            upsert=True
-        )
+        user = await self.user_col.find_one({"_id": int(user_id)})
+        if not user:
+            # Create a new user if they don't exist
+            new_user = self.new_user(user_id)
+            new_user["mode"] = mode
+            await self.user_col.insert_one(new_user)
+        else:
+            # Update the mode for the existing user
+            await self.user_col.update_one(
+                {"_id": int(user_id)},
+                {"$set": {"mode": mode}}
+            )
 	
     async def get_db_size(self):
         return (await self.db.command("dbstats"))['dataSize']
