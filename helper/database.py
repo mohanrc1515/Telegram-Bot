@@ -468,6 +468,15 @@ class Database:
             {"$set": {"caption_mode": mode}},
             upsert=True
         )
+
+	
+    # Set the mode for a user (Manual Rename, Auto Rename, etc.)
+    async def set_user_mode(self, user_id, mode):
+        await self.set_user_attr(user_id, "mode", mode)
+
+    # Get the mode for a user
+    async def get_user_mode(self, user_id):
+        return await self.get_user_attr(user_id, "mode")
 	
     async def get_db_size(self):
         return (await self.db.command("dbstats"))['dataSize']
