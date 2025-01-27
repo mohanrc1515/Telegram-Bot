@@ -255,7 +255,24 @@ class Database:
     async def get_caption(self, id):
         user = await self.user_col.find_one({'_id': int(id)})
         return user.get('caption', None)
-  
+
+    async def set_prefix(self, id, prefix):
+        await self.col.update_one({'_id': int(id)}, {'$set': {'prefix': prefix}})  
+        
+    async def get_prefix(self, id):
+        user = await self.col.find_one({'_id': int(id)})
+        return user.get('prefix', None)      
+    
+
+    #======================= Suffix ========================#
+
+    async def set_suffix(self, id, suffix):
+        await self.col.update_one({'_id': int(id)}, {'$set': {'suffix': suffix}})  
+        
+    async def get_suffix(self, id):
+        user = await self.col.find_one({'_id': int(id)})
+        return user.get('suffix', None)
+	
     async def store_media_info_in_db(self, media_info):
         result = await self.media_info_col.insert_one(media_info)
         return result.inserted_id    
