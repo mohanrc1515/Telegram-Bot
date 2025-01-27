@@ -25,7 +25,7 @@ async def rename_command(client, message):
 
     # Check if the user is in Manual Rename mode
     if not await db.get_mode(user_id):
-        return await message.reply_text("You are currently in Auto Rename mode. Switch to Manual Rename mode to use this command.")
+        return await message.reply_text("You are currently in Auto Rename mode. Switch to Manual Rename mode to use this command by hitting /mode.")
 
     file = reply_message.document or reply_message.audio or reply_message.video
     filename = file.file_name
