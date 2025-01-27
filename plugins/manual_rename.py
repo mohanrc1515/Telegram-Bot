@@ -70,11 +70,11 @@ async def handle_rename_reply(client, message):
         await reply_message.delete()
 
         # Provide options for output file type
-        button = [[InlineKeyboardButton("📁 Document", callback_data="upload_document")]]
-        if file.video:
-            button.append([InlineKeyboardButton("🎥 Video", callback_data="upload_video")])
-        elif file.audio:
-            button.append([InlineKeyboardButton("🎵 Audio", callback_data="upload_audio")])
+        button = [[InlineKeyboardButton("📁 Document",callback_data = "upload_document")]]
+        if file.media in [MessageMediaType.VIDEO, MessageMediaType.DOCUMENT]:
+            button.append([InlineKeyboardButton("🎥 Video", callback_data = "upload_video")])
+        elif file.media == MessageMediaType.AUDIO:
+            button.append([InlineKeyboardButton("🎵 Audio", callback_data = "upload_audio")])
         await message.reply(
             text=f"**Select The Output File Type**\n\n**File Name :-** `{new_name}`",
             reply_to_message_id=file.id,
