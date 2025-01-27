@@ -125,7 +125,9 @@ async def callback_query_handler(client, callback_query):
 @Client.on_message(filters.private & filters.command("mode"))
 async def change_mode(client: Client, message: Message):
     user_id = message.chat.id
-    current_mode = await db.get_mode(user_id) 
+    current_mode = await db.get_mode(user_id)
+    
+    # Buttons arranged vertically
     auto_rename_button = InlineKeyboardButton(
         f"{'✅ ' if not current_mode else ''}Auto Rename",
         callback_data="set_auto"
@@ -136,7 +138,7 @@ async def change_mode(client: Client, message: Message):
     )
     await message.reply(
         "Select your preference:",
-        reply_markup=InlineKeyboardMarkup([[auto_rename_button], [manual_rename_button]])
+        reply_markup=InlineKeyboardMarkup([[auto_rename_button], [manual_rename_button]])  # Vertical alignment
     )
 
 @Client.on_callback_query(filters.regex(r"set_(auto|manual)"))
@@ -144,8 +146,10 @@ async def set_mode(client: Client, callback_query):
     user_id = callback_query.from_user.id
     mode = callback_query.data.split("_")[1]
     new_mode = True if mode == "manual" else False
-    
+
     await db.set_mode(user_id, new_mode)
+    
+    # Buttons arranged vertically
     auto_rename_button = InlineKeyboardButton(
         f"{'✅ ' if not new_mode else ''}Auto Rename",
         callback_data="set_auto"
@@ -154,10 +158,9 @@ async def set_mode(client: Client, callback_query):
         f"{'✅ ' if new_mode else ''}Manual Rename",
         callback_data="set_manual"
     )
-
     await callback_query.message.edit_text(
         "Select your preference:",
-        reply_markup=InlineKeyboardMarkup([[auto_rename_button, manual_rename_button]])
+        reply_markup=InlineKeyboardMarkup([[auto_rename_button], [manual_rename_button]])  # Vertical alignment
     )
 
     await callback_query.answer(
