@@ -488,11 +488,11 @@ class Database:
 	
     # Fetch the user's mode
     async def get_mode(self, user_id):
-        user_data = await collection.find_one({"_id": user_id})
+        user_data = await self.user_col.find_one({"_id": user_id})
         return user_data.get("mode", False)  # Default to False (Auto Rename)
 
     async def set_mode(self, user_id, mode):
-        await collection.update_one({"_id": user_id}, {"$set": {"mode": mode}}, upsert=True)
+        await self.user_col.update_one({"_id": user_id}, {"$set": {"mode": mode}}, upsert=True)
 	
     async def get_db_size(self):
         return (await self.db.command("dbstats"))['dataSize']
