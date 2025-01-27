@@ -168,9 +168,10 @@ async def handle_upload(bot, update):
              except Exception as e:
                  ph_path = None
                  print(e)  
-
-
+ 
     await ms.edit("💠 Try To Upload...  ⚡")
+    file_size = file.file_size if file else 0
+    await update_statistics(message.chat.id, file_size)       
     type = update.data.split("_")[1]
     try:
         if type == "document":
