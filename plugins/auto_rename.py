@@ -117,7 +117,6 @@ async def callback_query_handler(client, callback_query):
             [InlineKeyboardButton(video_button_text, callback_data="setmedia_video")],
             [InlineKeyboardButton(audio_button_text, callback_data="setmedia_audio")]
         ])
-
         await callback_query.message.edit_text("Choose your preferred media type:", reply_markup=keyboard)
         await callback_query.answer(f"Media preference set to: {media_type.capitalize()}")
     except Exception as e:
@@ -126,7 +125,7 @@ async def callback_query_handler(client, callback_query):
 @Client.on_message(filters.private & filters.command("mode"))
 async def change_mode(client: Client, message: Message):
     user_id = message.chat.id
-    current_mode = await db.get_mode(user_id)
+    current_mode = await db.get_mode(user_id) 
     auto_rename_button = InlineKeyboardButton(
         f"{'✅ ' if not current_mode else ''}Auto Rename",
         callback_data="set_auto"
@@ -135,10 +134,9 @@ async def change_mode(client: Client, message: Message):
         f"{'✅ ' if current_mode else ''}Manual Rename",
         callback_data="set_manual"
     )
-
     await message.reply(
         "Select your preference:",
-        reply_markup=InlineKeyboardMarkup([[auto_rename_button, manual_rename_button]])
+        reply_markup=InlineKeyboardMarkup([[auto_rename_button], [manual_rename_button]])
     )
 
 @Client.on_callback_query(filters.regex(r"set_(auto|manual)"))
