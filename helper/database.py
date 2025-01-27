@@ -487,25 +487,12 @@ class Database:
 	)
 	
     # Fetch the user's mode
-    async def get_mode(self, user_id):
-        user = await self.user_col.find_one({"_id": int(user_id)})
-        if user and "mode" in user:
-            return user["mode"]
-        return False  # Default to Auto Rename if mode is not set
+    async def get_mode(user_id):
+        user_data = await collection.find_one({"_id": user_id})
+        return user_data.get("mode", False)  # Default to False (Auto Rename)
 
-    async def set_mode(self, user_id, mode):
-        user = await self.user_col.find_one({"_id": int(user_id)})
-        if not user:
-            # Create a new user if they don't exist
-            new_user = self.new_user(user_id)
-            new_user["mode"] = mode
-            await self.user_col.insert_one(new_user)
-        else:
-            # Update the mode for the existing user
-            await self.user_col.update_one(
-                {"_id": int(user_id)},
-                {"$set": {"mode": mode}}
-            )
+    async def set_mode(user_id, mode):
+        await collection.update_one({"_id": user_id}, {"$set": {"mode": mode}}, upsert=True)
 	
     async def get_db_size(self):
         return (await self.db.command("dbstats"))['dataSize']
