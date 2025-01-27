@@ -149,6 +149,8 @@ async def handle_upload(bot, update):
         ph_path = await bot.download_media(c_thumb)
         ph_path = await fix_thumb(ph_path)
 
+    file_size = file.file_size if file else 0
+    await update_statistics(message.chat.id, file_size)
     await ms.edit("💠 Uploading... ⚡")
     upload_type = update.data.split("_")[1]
     try:
