@@ -123,17 +123,17 @@ async def handle_upload(bot, update):
     file_path = os.path.join("downloads", str(update.from_user.id), new_filename)
     file = update.message.reply_to_message
 
-    ms = await update.message.edit("🚀 Trying to download... ⚡")
+    download_msg = await update.message.edit("🚀 Trying to download... ⚡")
     try:
         path = await bot.download_media(
             message=file,
             file_name=file_path,
             progress=progress_for_pyrogram,
-            progress_args=("🚀 Downloading... ⚡", ms, time.time())
+            progress_args=("🚀 Downloading... ⚡", download_msg, time.time())
         )
     except Exception as e:
         logger.error(f"Download error: {e}")
-        return await ms.edit(str(e))
+        return await download_msg.edit(str(e))
 
     # Handle metadata if enabled
     _bool_metadata = await db.get_meta(update.message.chat.id)
@@ -148,11 +148,11 @@ async def handle_upload(bot, update):
         sub_artist = elites_data.get("artist")
 
         metadata_path = f"Metadata/{new_filename}"
-        await add_metadata(path, metadata_path, sub_title, sub_author, sub_subtitle, sub_audio, sub_video, sub_artist)
+        await add_metadata(path, metadata_path, sub_title, sub_author, sub_subtitle, sub_audio, sub_video, sub_artist, download_msg)
 
     else:
         await asyncio.sleep(1.5)
-        await ms.edit("Processing... ⚡")
+        await download_msg.edit("Processing... ⚡")
 
     duration = 0
     try:
@@ -179,7 +179,7 @@ async def handle_upload(bot, update):
                 duration=convert(duration)
             )
         except Exception as e:
-            return await ms.edit(f"Caption formatting error: {e}")
+            return await download_msg.edit(f"Caption formatting error: {e}")
     else:
         caption = f"**{new_filename}**"
 
@@ -195,7 +195,7 @@ async def handle_upload(bot, update):
                 ph_path = None
                 print(e)
 
-    await ms.edit("💠 Trying to upload... ⚡")
+    await download_msg.edit("💠 Trying to upload... ⚡")
     await update_statistics(update.message.chat.id, file_size)
     upload_type = update.data.split("_")[1]
 
@@ -207,7 +207,7 @@ async def handle_upload(bot, update):
                 thumb=ph_path,
                 caption=caption,
                 progress=progress_for_pyrogram,
-                progress_args=("💠 Uploading... ⚡", ms, time.time())
+                progress_args=("💠 Uploading... ⚡", download_msg, time.time())
             )
 
         elif upload_type == "video":
@@ -218,7 +218,7 @@ async def handle_upload(bot, update):
                 thumb=ph_path,
                 duration=duration,
                 progress=progress_for_pyrogram,
-                progress_args=("💠 Uploading... ⚡", ms, time.time())
+                progress_args=("💠 Uploading... ⚡", download_msg, time.time())
             )
 
         elif upload_type == "audio":
@@ -229,7 +229,7 @@ async def handle_upload(bot, update):
                 thumb=ph_path,
                 duration=duration,
                 progress=progress_for_pyrogram,
-                progress_args=("💠 Uploading... ⚡", ms, time.time())
+                progress_args=("💠 Uploading... ⚡", download_msg, time.time())
             )
 
     except Exception as e:
@@ -238,7 +238,7 @@ async def handle_upload(bot, update):
             os.remove(ph_path)
         return await ms.edit(f"**Error:** `{e}`")
 
-    await ms.delete()
+    await download_msg.delete()
     if ph_path:
         os.remove(ph_path)
     if file_path:
