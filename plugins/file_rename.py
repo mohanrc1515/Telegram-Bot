@@ -140,9 +140,62 @@ async def handle_files(client: Client, message: Message):
         await message.reply_text(Config.USER_REPLY)
         return
 
-    user_mode = await db.get_mode(user_id)
-    if user_mode != "Auto Rename":
-        return    
+    if not await db.get_mode(user_id):
+        return
+
+    reply_message = message.reply_to_message
+
+    if reply_message and reply_message.reply_markup and isinstance(reply_message.reply_markup, ForceReply):
+        # Handle response to ForceReply
+        new_name = message.text
+        await message.delete()
+        msg = await client.get_messages(user_id, reply_message.id)
+        file = msg.reply_to_message
+        media = getattr(file, file.media.value)
+
+        # Add file extension if not present
+        if "." not in new_name:
+            extn = media.file_name.rsplit('.', 1)[-1] if "." in media.file_name else "mkv"
+            new_name = f"{new_name}.{extn}"
+
+        await reply_message.delete()
+
+        # Provide options for output file type
+        button = [[InlineKeyboardButton("📁 Document", callback_data="upload_document")]]
+        if file.media in ["video", "document"]:  # Simplified check
+            button.append([InlineKeyboardButton("🎥 Video", callback_data="upload_video")])
+        elif file.media == "audio":
+            button.append([InlineKeyboardButton("🎵 Audio", callback_data="upload_audio")])
+
+        await message.reply(
+            text=f"**Select The Output File Type**\n\n**File Name :-** `{new_name}`",
+            reply_to_message_id=file.id,
+            reply_markup=InlineKeyboardMarkup(button),
+        )
+    else:
+        # Handle new rename requests
+        file = getattr(message, message.media.value)
+        filename = file.file_name
+        if file.file_size > 2000 * 1024 * 1024:
+            return await message.reply_text("Sorry, this bot doesn't support uploading files larger than 2GB.")
+
+        try:
+            await message.reply_text(
+                text=f"**Please Enter New Filename...**\n\n**Old File Name** :- `{filename}`",
+                reply_to_message_id=message.id,
+                reply_markup=ForceReply(True),
+            )
+            await sleep(30)
+        except FloodWait as e:
+            await sleep(e.value)
+            await message.reply_text(
+                text=f"**Please Enter New Filename**\n\n**Old File Name** :- `{filename}`",
+                reply_to_message_id=message.id,
+                reply_markup=ForceReply(True),
+            )
+        except Exception as e:
+            print(f"Error in handle_rename: {e}")
+            return
     
     if await db.is_user_sequence_mode(user_id):
         file_name = None
