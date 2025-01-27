@@ -18,8 +18,8 @@ async def rename_start(client, message):
     
     # Check if the user is in Manual Rename mode
     user_mode = await db.get_mode(user_id)
-    if user_mode != "Manual Rename":
-        return await message.reply_text("You are not in Manual Rename mode. Change your mode to Manual Rename to use this feature.")
+    if user_mode = "Auto Rename":
+        return
     
     file = getattr(message, message.media.value)
     filename = file.file_name
@@ -52,7 +52,7 @@ async def refunc(client, message):
 
     # Check if the user is in Manual Rename mode
     user_mode = await db.get_mode(user_id)
-    if user_mode != "Manual Rename":
+    if user_mode = "Auto Rename":
         return
 
     # Check if reply is to a ForceReply message
