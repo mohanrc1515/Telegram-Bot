@@ -609,6 +609,123 @@ async def handle_files(client: Client, message: Message):
             task = await user_queue.get()
             await process_task(user_id, task)
             user_queue.task_done()
+
+
+@Client.on_callback_query(filters.regex("upload"))
+async def doc(bot, update):    
+    if not os.path.isdir("Metadata"):
+        os.mkdir("Metadata")
+        
+    prefix = await db.get_prefix(update.message.chat.id)
+    suffix = await db.get_suffix(update.message.chat.id)
+    new_name = update.message.text.split(":-")[1].strip()
+
+    try:
+        new_filename = add_prefix_suffix(new_name, prefix, suffix)
+    except Exception as e:
+        return await update.message.edit(f"Error: {e}")
+
+    file_path = f"downloads/{update.from_user.id}/{new_filename}"
+    file = update.message.reply_to_message
+
+    ms = await update.message.edit("🚀 Try To Download...  ⚡")    
+    try:
+        path = await bot.download_media(
+            message=file, 
+            file_name=file_path, 
+            progress=progress_for_pyrogram,
+            progress_args=("🚀 Try To Downloading...  ⚡", ms, time.time())
+        )
+        
+        # Add the line to update statistics after the download is completed
+        file_size = file.file_size if file else 0
+        await update_statistics(message.chat.id, file_size)
+    
+    except Exception as e:
+        return await ms.edit(e)      
+    
+    _bool_metadata = await db.get_meta(update.message.chat.id)
+    if _bool_metadata:
+        elites_data = await db.get_metadata(update.message.chat.id)
+        metadata_path = f"Metadata/{new_filename}"
+        try:
+            await add_metadata(
+                path, metadata_path,
+                elites_data.get("title"), elites_data.get("author"),
+                elites_data.get("subtitle"), elites_data.get("audio"),
+                elites_data.get("video"), elites_data.get("artist")
+            )
+        except Exception as e:
+            return await ms.edit(f"Error adding metadata: {e}")
+
+    duration = 0
+    try:
+        parser = createParser(file_path)
+        metadata = extractMetadata(parser)
+        if metadata.has("duration"):
+            duration = metadata.get('duration').seconds
+        parser.close()   
+    except:
+        pass
+        
+    ph_path = None
+    media = getattr(file, file.media.value)
+    c_caption = await db.get_caption(update.message.chat.id)
+    c_thumb = await db.get_thumbnail(update.message.chat.id)
+
+    file_size = getattr(file, "file_size", None)
+    caption = c_caption.format(
+        filename=new_filename,
+        filesize=humanbytes(file_size) if file_size else "Unknown",
+        duration=convert(duration) if duration else "N/A"
+    ) if c_caption else f"{new_filename}"
+
+    caption_mode = await db.get_caption_preference(update.message.chat.id) or "normal"
+    if caption_mode == "bold":
+        caption = f"**{caption}**"
+    elif caption_mode == "italic":
+        caption = f"__{caption}__"
+    elif caption_mode == "underline":
+        caption = f"<u>{caption}</u>"
+    elif caption_mode == "strikethrough":
+        caption = f"~~{caption}~~"
+    elif caption_mode == "nocaption":
+        caption = f"```{caption}```"
+    elif caption_mode == "mono":
+        caption = f"`{caption}`"
+    elif caption_mode == "spoiler":
+        caption = f"||{caption}||"
+
+    if c_thumb:
+        ph_path = await bot.download_media(c_thumb)
+        ph_path = await fix_thumb(ph_path)
+
+    await ms.edit("💠 Uploading... ⚡")
+    type = update.data.split("_")[1]
+    try:
+        send_func = {
+            "document": bot.send_document,
+            "video": bot.send_video,
+            "audio": bot.send_audio
+        }
+        await send_func[type](
+            update.message.chat.id,
+            document=metadata_path if _bool_metadata else file_path,
+            caption=caption,
+            thumb=ph_path,
+            duration=duration,
+            progress=progress_for_pyrogram,
+            progress_args=("💠 Uploading... ⚡", ms, time.time())
+        )
+    except Exception as e:
+        return await ms.edit(f"Error: {e}")
+    finally:
+        if ph_path:
+            os.remove(ph_path)
+        if file_path:
+            os.remove(file_path)
+
+    await ms.delete()
     
 # Define the priority for each quality
 quality_priority = {
@@ -619,8 +736,6 @@ quality_priority = {
     "4k": 5,
     "8k": 6
 }
-
-
 
 async def send_custom_message(client, dump_channel, message_data, current_item, first_item=None, last_item=None):
     # Replace placeholders in the message text
