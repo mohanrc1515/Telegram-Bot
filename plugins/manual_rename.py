@@ -1,5 +1,6 @@
 from pyrogram import Client, filters
 from pyrogram.errors import FloodWait
+from pyrogram.enums import MessageMediaType
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ForceReply
 from hachoir.metadata import extractMetadata
 from hachoir.parser import createParser
