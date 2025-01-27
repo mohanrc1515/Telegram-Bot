@@ -236,7 +236,7 @@ async def handle_upload(bot, update):
         os.remove(file_path)
         if ph_path:
             os.remove(ph_path)
-        return await ms.edit(f"**Error:** `{e}`")
+        return await download_msg.edit(f"**Error:** `{e}`")
 
     await download_msg.delete()
     if ph_path:
