@@ -257,20 +257,20 @@ class Database:
         return user.get('caption', None)
 
     async def set_prefix(self, id, prefix):
-        await self.col.update_one({'_id': int(id)}, {'$set': {'prefix': prefix}})  
+        await self.user_col.update_one({'_id': int(id)}, {'$set': {'prefix': prefix}})  
         
     async def get_prefix(self, id):
-        user = await self.col.find_one({'_id': int(id)})
+        user = await self.user_col.find_one({'_id': int(id)})
         return user.get('prefix', None)      
     
 
     #======================= Suffix ========================#
 
     async def set_suffix(self, id, suffix):
-        await self.col.update_one({'_id': int(id)}, {'$set': {'suffix': suffix}})  
+        await self.user_col.update_one({'_id': int(id)}, {'$set': {'suffix': suffix}})  
         
     async def get_suffix(self, id):
-        user = await self.col.find_one({'_id': int(id)})
+        user = await self.user_col.find_one({'_id': int(id)})
         return user.get('suffix', None)	
 
     async def update_file_count(self, user_id, count):
