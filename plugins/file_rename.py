@@ -140,10 +140,8 @@ async def handle_files(client: Client, message: Message):
         await message.reply_text(Config.USER_REPLY)
         return
 
-    #if not await db.get_mode(user_id):
-   #     return
-
-    #reply_message = message.reply_to_message
+    if await db.get_mode(user_id):
+        return
     
     if await db.is_user_sequence_mode(user_id):
         file_name = None
