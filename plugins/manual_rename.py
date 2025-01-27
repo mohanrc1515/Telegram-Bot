@@ -136,76 +136,81 @@ async def handle_upload(bot, update):
         return await ms.edit(str(e))
 
     # Handle metadata if enabled
-        _bool_metadata = await db.get_meta(message.chat.id)
-        if _bool_metadata:
-            # Retrieve metadata title, author, subtitle, audio, video, and artist from the database
-            elites_data = await db.get_metadata(message.chat.id)
-                
-            sub_title = elites_data.get("title")
-            sub_author = elites_data.get("author")
-            sub_subtitle = elites_data.get("subtitle")
-            sub_audio = elites_data.get("audio")
-            sub_video = elites_data.get("video")
-            sub_artist = elites_data.get("artist")
+    _bool_metadata = await db.get_meta(update.message.chat.id)
+    if _bool_metadata:
+        elites_data = await db.get_metadata(update.message.chat.id)
 
-            metadata_path = f"Metadata/{new_file_name}"
-            await add_metadata(path, metadata_path, sub_title, sub_author, sub_subtitle, sub_audio, sub_video, sub_artist, download_msg)
+        sub_title = elites_data.get("title")
+        sub_author = elites_data.get("author")
+        sub_subtitle = elites_data.get("subtitle")
+        sub_audio = elites_data.get("audio")
+        sub_video = elites_data.get("video")
+        sub_artist = elites_data.get("artist")
 
-        else:
-            await asyncio.sleep(1.5)
-            await download_msg.edit("Processing....  ⚡")
-        
-        duration = 0
+        metadata_path = f"Metadata/{new_filename}"
+        await add_metadata(path, metadata_path, sub_title, sub_author, sub_subtitle, sub_audio, sub_video, sub_artist)
+
+    else:
+        await asyncio.sleep(1.5)
+        await ms.edit("Processing... ⚡")
+
+    duration = 0
     try:
         parser = createParser(file_path)
         metadata = extractMetadata(parser)
-        if metadata.has("duration"):
-           duration = metadata.get('duration').seconds
-        parser.close()   
+        if metadata and metadata.has("duration"):
+            duration = metadata.get('duration').seconds
+        parser.close()
     except:
         pass
-        
+
     ph_path = None
-    user_id = int(update.message.chat.id) 
-    media = getattr(file, file.media.value)
+    user_id = int(update.message.chat.id)
+    media = getattr(file, file.media.value, None) if file.media else None
+    file_size = media.file_size if media else 0
     c_caption = await db.get_caption(update.message.chat.id)
     c_thumb = await db.get_thumbnail(update.message.chat.id)
 
     if c_caption:
-         try:
-             caption = c_caption.format(filename=new_filename, filesize=humanbytes(media.file_size), duration=convert(duration))
-         except Exception as e:
-             return await ms.edit(text=f"Your Caption Error Except Keyword Argument: ({e})")             
+        try:
+            caption = c_caption.format(
+                filename=new_filename,
+                filesize=humanbytes(file_size),
+                duration=convert(duration)
+            )
+        except Exception as e:
+            return await ms.edit(f"Caption formatting error: {e}")
     else:
-         caption = f"**{new_filename}**"
- 
-    if (media.thumbs or c_thumb):
-         if c_thumb:
-             ph_path = await bot.download_media(c_thumb)
-             width, height, ph_path = await fix_thumb(ph_path)
-         else:
-             try:
-                 ph_path_ = await take_screen_shot(file_path, os.path.dirname(os.path.abspath(file_path)), random.randint(0, duration - 1))
-                 width, height, ph_path = await fix_thumb(ph_path_)
-             except Exception as e:
-                 ph_path = None
-                 print(e)  
- 
-    await ms.edit("💠 Try To Upload...  ⚡")
-    file_size = file.file_size if file else 0
-    await update_statistics(message.chat.id, file_size)       
-    type = update.data.split("_")[1]
+        caption = f"**{new_filename}**"
+
+    if media and (media.thumbs or c_thumb):
+        if c_thumb:
+            ph_path = await bot.download_media(c_thumb)
+            width, height, ph_path = await fix_thumb(ph_path)
+        else:
+            try:
+                ph_path_ = await take_screen_shot(file_path, os.path.dirname(file_path), random.randint(0, duration - 1))
+                width, height, ph_path = await fix_thumb(ph_path_)
+            except Exception as e:
+                ph_path = None
+                print(e)
+
+    await ms.edit("💠 Trying to upload... ⚡")
+    await update_statistics(update.message.chat.id, file_size)
+    upload_type = update.data.split("_")[1]
+
     try:
-        if type == "document":
+        if upload_type == "document":
             await bot.send_document(
                 update.message.chat.id,
                 document=metadata_path if _bool_metadata else file_path,
-                thumb=ph_path, 
-                caption=caption, 
+                thumb=ph_path,
+                caption=caption,
                 progress=progress_for_pyrogram,
-                progress_args=("💠 Try To Uploading...  ⚡", ms, time.time()))
+                progress_args=("💠 Uploading... ⚡", ms, time.time())
+            )
 
-        elif type == "video": 
+        elif upload_type == "video":
             await bot.send_video(
                 update.message.chat.id,
                 video=metadata_path if _bool_metadata else file_path,
@@ -213,9 +218,10 @@ async def handle_upload(bot, update):
                 thumb=ph_path,
                 duration=duration,
                 progress=progress_for_pyrogram,
-                progress_args=("💠 Try To Uploading...  ⚡", ms, time.time()))
+                progress_args=("💠 Uploading... ⚡", ms, time.time())
+            )
 
-        elif type == "audio": 
+        elif upload_type == "audio":
             await bot.send_audio(
                 update.message.chat.id,
                 audio=metadata_path if _bool_metadata else file_path,
@@ -223,16 +229,16 @@ async def handle_upload(bot, update):
                 thumb=ph_path,
                 duration=duration,
                 progress=progress_for_pyrogram,
-                progress_args=("💠 Try To Uploading...  ⚡", ms, time.time()))
+                progress_args=("💠 Uploading... ⚡", ms, time.time())
+            )
 
-
-    except Exception as e:          
+    except Exception as e:
         os.remove(file_path)
         if ph_path:
             os.remove(ph_path)
-        return await ms.edit(f"**Error :** `{e}`")    
- 
-    await ms.delete() 
+        return await ms.edit(f"**Error:** `{e}`")
+
+    await ms.delete()
     if ph_path:
         os.remove(ph_path)
     if file_path:
