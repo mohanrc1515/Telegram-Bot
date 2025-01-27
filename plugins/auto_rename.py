@@ -124,12 +124,17 @@ async def callback_query_handler(client, callback_query):
         await callback_query.message.edit_text(f"An unexpected error occurred: {e}")
 
 
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram import Client, filters
+
 @Client.on_message(filters.command("mode") & filters.private)
 async def set_mode(client, message):
     user_id = message.from_user.id
+
+    # Fetch the current mode from the database
     current_mode = await db.get_mode(user_id)
     if not current_mode:
-        current_mode = "Manual Rename"
+        current_mode = "Auto Rename"  # Default mode is Auto Rename
 
     # Prepare the inline buttons with indicators
     manual_rename_btn = "✅ Manual Renaming" if current_mode == "Manual Rename" else "Manual Renaming"
