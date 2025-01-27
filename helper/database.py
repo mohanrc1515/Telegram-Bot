@@ -271,12 +271,7 @@ class Database:
         
     async def get_suffix(self, id):
         user = await self.col.find_one({'_id': int(id)})
-        return user.get('suffix', None)
-	
-    async def store_media_info_in_db(self, media_info):
-        result = await self.media_info_col.insert_one(media_info)
-        return result.inserted_id    
-           
+        return user.get('suffix', None)	
 
     async def update_file_count(self, user_id, count):
         logging.info(f"Updating file count for user {user_id} to {count}")
