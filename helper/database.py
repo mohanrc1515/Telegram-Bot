@@ -486,10 +486,6 @@ class Database:
             upsert=True
 	)
 
-    async def store_media_info_in_db(self, media_info):
-        result = await self.media_info_col.insert_one(media_info)
-        return result.inserted_id	
-	
     # Fetch the user's mode
     async def get_mode(self, user_id):
         user_data = await self.user_col.find_one({"_id": user_id})
