@@ -19,7 +19,7 @@ async def rename_start(client, message):
     # Check if the user is in Manual Rename mode
     user_mode = await db.get_mode(user_id)  # Assume this returns the user's mode
     if user_mode != "Manual Rename":
-        return await message.reply_text("You are not in Manual Rename mode. Change your mode to Manual Rename to use this feature.")
+        return
     
     file = getattr(message, message.media.value)
     filename = file.file_name  
