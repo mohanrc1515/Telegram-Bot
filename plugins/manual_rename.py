@@ -9,10 +9,32 @@ from helper.utils import progress_for_pyrogram, humanbytes, convert, add_prefix_
 from helper.database import db
 from asyncio import sleep
 import os, time, logging
+import asyncio
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+async def update_statistics(user_id, file_size):
+    # Update user-specific file count
+    current_user_count = await db.get_file_count(user_id)
+    new_user_count = current_user_count + 1
+    await db.update_file_count(user_id, new_user_count)
+
+    # Update global file count and size
+    current_global_count = await db.get_total_files_renamed()
+    current_global_size = await db.get_total_renamed_size()
+
+    new_global_count = current_global_count + 1
+    new_global_size = current_global_size + file_size
+
+    await db.update_total_files_renamed(new_global_count)
+    await db.update_total_renamed_size(new_global_size)
+
+    # Log the updated stats
+    print(f"User {user_id}: Files Processed = {new_user_count}")
+    print(f"Global Stats: Total Files = {new_global_count}, Total Size = {humanbytes(new_global_size)}")
+    
 
 @Client.on_message(filters.private & filters.command("rename"))
 async def rename_command(client, message):
