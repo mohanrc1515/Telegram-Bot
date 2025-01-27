@@ -1,5 +1,5 @@
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.errors import FloodWait
 from helper.database import db
 from config import Config, Txt
@@ -123,7 +123,6 @@ async def callback_query_handler(client, callback_query):
     except Exception as e:
         await callback_query.message.edit_text(f"An unexpected error occurred: {e}")
 
-
 @Client.on_message(filters.private & filters.command("mode"))
 async def change_mode(client: Client, message: Message):
     user_id = message.chat.id
@@ -141,7 +140,6 @@ async def change_mode(client: Client, message: Message):
         "Select your preference:",
         reply_markup=InlineKeyboardMarkup([[auto_rename_button, manual_rename_button]])
     )
-
 
 @Client.on_callback_query(filters.regex(r"set_(auto|manual)"))
 async def set_mode(client: Client, callback_query):
