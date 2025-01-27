@@ -54,9 +54,9 @@ class Database:
             "sequence_queue": [],
             "referral_points": 0,
             "metadata": False,
-            "file_count": 0
-        }
-
+            "file_count": 0,
+            "mode": "Auto Rename"
+	}
 
     async def add_user(self, client, message):
         u = message.from_user
@@ -484,16 +484,22 @@ class Database:
             {"_id": user_id},
             {"$set": {"caption_mode": mode}},
             upsert=True
-        )
-
+	)
 	
-    # Set the mode for a user (Manual Rename, Auto Rename, etc.)
-    async def set_user_mode(self, user_id, mode):
-        await self.set_user_attr(user_id, "mode", mode)
+    # Fetch the user's mode
+    async def get_mode(self, user_id):
+        user = await self.user_col.find_one({"_id": int(user_id)})
+        if user:
+            return user.get("mode", "Auto Rename")
+        return "Auto Rename"
 
-    # Get the mode for a user
-    async def get_user_mode(self, user_id):
-        return await self.get_user_attr(user_id, "mode")
+   # Update the user's mode
+    async def set_mode(self, user_id, mode):
+        await self.user_col.update_one(
+            {"_id": int(user_id)},
+            {"$set": {"mode": mode}},
+            upsert=True
+        )
 	
     async def get_db_size(self):
         return (await self.db.command("dbstats"))['dataSize']
