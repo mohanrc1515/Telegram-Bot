@@ -140,8 +140,8 @@ async def handle_files(client: Client, message: Message):
         await message.reply_text(Config.USER_REPLY)
         return
 
-    user_mode = await db.get_mode(user_id)  # Assume this returns the user's mode
-    if user_mode != "Manual Rename":
+    user_mode = await db.get_mode(user_id)
+    if user_mode != "Auto Rename":
         return    
     
     if await db.is_user_sequence_mode(user_id):
