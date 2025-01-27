@@ -12,17 +12,17 @@ from PIL import Image
 import os, time, re, random, asyncio
 
 
-@@Client.on_message(filters.private & (filters.document | filters.audio | filters.video))
+@Client.on_message(filters.private & (filters.document | filters.audio | filters.video))
 async def rename_start(client, message):
     user_id = message.chat.id
     
     # Check if the user is in Manual Rename mode
-    user_mode = await db.get_mode(user_id)  # Assume this returns the user's mode
+    user_mode = await db.get_mode(user_id)
     if user_mode != "Manual Rename":
-        return
+        return await message.reply_text("You are not in Manual Rename mode. Change your mode to Manual Rename to use this feature.")
     
     file = getattr(message, message.media.value)
-    filename = file.file_name  
+    filename = file.file_name
     if file.file_size > 2000 * 1024 * 1024:
         return await message.reply_text("Sorry, this bot doesn't support uploading files larger than 2GB.")
     
@@ -32,7 +32,7 @@ async def rename_start(client, message):
             reply_to_message_id=message.id,
             reply_markup=ForceReply(True)
         )
-        await sleep(30)  # Wait for the user to reply
+        await sleep(30)
     except FloodWait as e:
         await sleep(e.value)
         await message.reply_text(
@@ -56,7 +56,7 @@ async def refunc(client, message):
         return
 
     # Check if reply is to a ForceReply message
-    if (reply_message.reply_markup) and isinstance(reply_message.reply_markup, ForceReply):
+    if reply_message.reply_markup and isinstance(reply_message.reply_markup, ForceReply):
         new_name = message.text
         await message.delete()
         msg = await client.get_messages(message.chat.id, reply_message.id)
@@ -65,11 +65,8 @@ async def refunc(client, message):
 
         # Add file extension if not present
         if "." not in new_name:
-            if "." in media.file_name:
-                extn = media.file_name.rsplit('.', 1)[-1]
-            else:
-                extn = "mkv"
-            new_name = new_name + "." + extn
+            extn = media.file_name.rsplit('.', 1)[-1] if "." in media.file_name else "mkv"
+            new_name = f"{new_name}.{extn}"
 
         await reply_message.delete()
 
@@ -89,132 +86,111 @@ async def refunc(client, message):
 
 @Client.on_callback_query(filters.regex("upload"))
 async def doc(bot, update):    
-    # Creating Directory for Metadata
     if not os.path.isdir("Metadata"):
         os.mkdir("Metadata")
         
-    # Extracting necessary information    
     prefix = await db.get_prefix(update.message.chat.id)
     suffix = await db.get_suffix(update.message.chat.id)
-    new_name = update.message.text
-    new_filename_ = new_name.split(":-")[1]
+    new_name = update.message.text.split(":-")[1].strip()
 
     try:
-        new_filename = add_prefix_suffix(new_filename_, prefix, suffix)
+        new_filename = add_prefix_suffix(new_name, prefix, suffix)
     except Exception as e:
-        return await update.message.edit(f"Something Went Wrong Can't Able To Set Prefix Or Suffix 🥺 \n\n**Contact My Creator :** @Elites_Assistance\n\n**Error :** `{e}`")
-    
+        return await update.message.edit(f"Error: {e}")
+
     file_path = f"downloads/{update.from_user.id}/{new_filename}"
     file = update.message.reply_to_message
 
-    ms = await update.message.edit("🚀 Try To Download...  ⚡")    
+    ms = await update.message.edit("🚀 Downloading... ⚡")    
     try:
-     	path = await bot.download_media(message=file, file_name=file_path, progress=progress_for_pyrogram,progress_args=("🚀 Try To Downloading...  ⚡", ms, time.time()))                    
+        path = await bot.download_media(
+            message=file, 
+            file_name=file_path, 
+            progress=progress_for_pyrogram,
+            progress_args=("🚀 Downloading... ⚡", ms, time.time())
+        )                    
     except Exception as e:
-     	return await ms.edit(e)
+        return await ms.edit(str(e))
     
-
-    # Metadata Adding Code
-    _bool_metadata = await db.get_meta(message.chat.id)
-        if _bool_metadata:
-            # Retrieve metadata title, author, subtitle, audio, video, and artist from the database
-            elites_data = await db.get_metadata(message.chat.id)
-                
-            sub_title = elites_data.get("title")
-            sub_author = elites_data.get("author")
-            sub_subtitle = elites_data.get("subtitle")
-            sub_audio = elites_data.get("audio")
-            sub_video = elites_data.get("video")
-            sub_artist = elites_data.get("artist")
-
-            metadata_path = f"Metadata/{new_file_name}"
-            await add_metadata(path, metadata_path, sub_title, sub_author, sub_subtitle, sub_audio, sub_video, sub_artist, download_msg)
-
-        else:
-            await asyncio.sleep(1.5)
-            await download_msg.edit("Processing....  ⚡")
+    _bool_metadata = await db.get_meta(update.message.chat.id)
+    if _bool_metadata:
+        elites_data = await db.get_metadata(update.message.chat.id)
+        metadata_path = f"Metadata/{new_filename}"
+        try:
+            await add_metadata(
+                path, metadata_path,
+                elites_data.get("title"), elites_data.get("author"),
+                elites_data.get("subtitle"), elites_data.get("audio"),
+                elites_data.get("video"), elites_data.get("artist")
+            )
+        except Exception as e:
+            return await ms.edit(f"Error adding metadata: {e}")
 
     duration = 0
     try:
         parser = createParser(file_path)
         metadata = extractMetadata(parser)
         if metadata.has("duration"):
-           duration = metadata.get('duration').seconds
+            duration = metadata.get('duration').seconds
         parser.close()   
     except:
         pass
         
     ph_path = None
-    user_id = int(update.message.chat.id) 
     media = getattr(file, file.media.value)
     c_caption = await db.get_caption(update.message.chat.id)
     c_thumb = await db.get_thumbnail(update.message.chat.id)
 
-    if c_caption:
-         try:
-             caption = c_caption.format(filename=new_filename, filesize=humanbytes(media.file_size), duration=convert(duration))
-         except Exception as e:
-             return await ms.edit(text=f"Your Caption Error Except Keyword Argument: ({e})")             
-    else:
-         caption = f"**{new_filename}**"
- 
-    if (media.thumbs or c_thumb):
-         if c_thumb:
-             ph_path = await bot.download_media(c_thumb)
-             width, height, ph_path = await fix_thumb(ph_path)
-         else:
-             try:
-                 ph_path_ = await take_screen_shot(file_path, os.path.dirname(os.path.abspath(file_path)), random.randint(0, duration - 1))
-                 width, height, ph_path = await fix_thumb(ph_path_)
-             except Exception as e:
-                 ph_path = None
-                 print(e)  
+    file_size = getattr(file, "file_size", None)
+    caption = c_caption.format(
+        filename=new_filename,
+        filesize=humanbytes(file_size) if file_size else "Unknown",
+        duration=convert(duration) if duration else "N/A"
+    ) if c_caption else f"{new_filename}"
 
+    caption_mode = await db.get_caption_preference(update.message.chat.id) or "normal"
+    if caption_mode == "bold":
+        caption = f"**{caption}**"
+    elif caption_mode == "italic":
+        caption = f"__{caption}__"
+    elif caption_mode == "underline":
+        caption = f"<u>{caption}</u>"
+    elif caption_mode == "strikethrough":
+        caption = f"~~{caption}~~"
+    elif caption_mode == "nocaption":
+        caption = f"```{caption}```"
+    elif caption_mode == "mono":
+        caption = f"`{caption}`"
+    elif caption_mode == "spoiler":
+        caption = f"||{caption}||"
 
-    await ms.edit("💠 Try To Upload...  ⚡")
+    if c_thumb:
+        ph_path = await bot.download_media(c_thumb)
+        ph_path = await fix_thumb(ph_path)
+
+    await ms.edit("💠 Uploading... ⚡")
     type = update.data.split("_")[1]
     try:
-        if type == "document":
-            await bot.send_document(
-                update.message.chat.id,
-                document=metadata_path if _bool_metadata else file_path,
-                thumb=ph_path, 
-                caption=caption, 
-                progress=progress_for_pyrogram,
-                progress_args=("💠 Try To Uploading...  ⚡", ms, time.time()))
-
-        elif type == "video": 
-            await bot.send_video(
-                update.message.chat.id,
-                video=metadata_path if _bool_metadata else file_path,
-                caption=caption,
-                thumb=ph_path,
-                duration=duration,
-                progress=progress_for_pyrogram,
-                progress_args=("💠 Try To Uploading...  ⚡", ms, time.time()))
-
-        elif type == "audio": 
-            await bot.send_audio(
-                update.message.chat.id,
-                audio=metadata_path if _bool_metadata else file_path,
-                caption=caption,
-                thumb=ph_path,
-                duration=duration,
-                progress=progress_for_pyrogram,
-                progress_args=("💠 Try To Uploading...  ⚡", ms, time.time()))
-
-
-    except Exception as e:          
-        os.remove(file_path)
+        send_func = {
+            "document": bot.send_document,
+            "video": bot.send_video,
+            "audio": bot.send_audio
+        }
+        await send_func[type](
+            update.message.chat.id,
+            document=metadata_path if _bool_metadata else file_path,
+            caption=caption,
+            thumb=ph_path,
+            duration=duration,
+            progress=progress_for_pyrogram,
+            progress_args=("💠 Uploading... ⚡", ms, time.time())
+        )
+    except Exception as e:
+        return await ms.edit(f"Error: {e}")
+    finally:
         if ph_path:
             os.remove(ph_path)
-        return await ms.edit(f"**Error :** `{e}`")    
- 
-    await ms.delete() 
-    if ph_path:
-        os.remove(ph_path)
-    if file_path:
-        os.remove(file_path)
-        
-        
-        
+        if file_path:
+            os.remove(file_path)
+
+    await ms.delete()
