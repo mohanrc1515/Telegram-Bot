@@ -12,7 +12,7 @@ settings_collection = db["settings"]
 
 # Constants
 ADMIN_ID = 6006418463
-LOG_CHANNEL = Config.LOG_CHANNEL  # Define your log channel ID in Config
+LOG_CHANNEL = Config.LOG_CHANNEL
 
 # Helper functions
 def get_giveaway_status():
@@ -79,7 +79,7 @@ async def toggle_giveaway(client, callback_query):
             await callback_query.answer("An error occurred while updating the giveaway status.", show_alert=True)
             print(f"Error toggling giveaway: {e}")
     else:
-        await callback_query.answer("You are not authorized to use this action.", show_alert=True)
+        await callback_query.answer("Nice Try Diddy.", show_alert=True)
 
 @Client.on_callback_query(filters.regex("clear_data"))
 async def clear_data(client, callback_query):
@@ -95,7 +95,7 @@ async def clear_data(client, callback_query):
             reply_markup=buttons
         )
     else:
-        await callback_query.answer("You are not authorized to use this action.", show_alert=True)
+        await callback_query.answer("Nice Try Diddy.", show_alert=True)
         
 @Client.on_message(filters.command("enter") & filters.group)
 async def enter_giveaway_group(client, message):
