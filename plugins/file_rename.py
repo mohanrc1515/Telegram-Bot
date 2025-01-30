@@ -114,7 +114,9 @@ async def show_queue(client, message: Message):
     else:
         await message.reply_text("Your renaming queue is empty.")
         
-@Client.on_message(filters.command("getthumb") & filters.private)
+autorename_client = Client("autorename_session")
+
+@autorename_client.on_message(filters.command("getthumb") & filters.private)
 async def get_thumbnail(client, message: Message):
     user_id = message.from_user.id
 
