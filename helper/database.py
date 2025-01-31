@@ -2,6 +2,7 @@ import logging
 import motor.motor_asyncio
 from config import Config
 from .utils import send_log
+from datetime import datetime
 
 class Database:
 
@@ -17,6 +18,7 @@ class Database:
         return {
             "_id": int(id),
             "file_id": None,
+            "last_fap_time": None  # ✅ Add a new field for last fap time
         }
 
     async def add_user(self, b, m):
@@ -104,6 +106,23 @@ class Database:
             )
             return True
         return False
+
+    # ✅ New function: Get last fap time
+    async def get_last_fap_time(self, user_id):
+        """Retrieve the last fap time for a user."""
+        user = await self.user_col.find_one({'_id': int(user_id)})
+        if user and user.get("last_fap_time"):
+            return datetime.fromisoformat(user["last_fap_time"])
+        return None
+
+    # ✅ New function: Set last fap time
+    async def set_last_fap_time(self, user_id, last_fap_time):
+        """Set the last fap time for a user."""
+        await self.user_col.update_one(
+            {'_id': int(user_id)},
+            {'$set': {'last_fap_time': last_fap_time.isoformat()}},
+            upsert=True
+        )
 
 # ✅ Initialize database with connection URL and database name
 db = Database(Config.DB_URL, Config.DB_NAME)
