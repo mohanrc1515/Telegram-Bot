@@ -43,19 +43,6 @@ class Database:
 
     async def delete_user(self, user_id):
         await self.user_col.delete_many({'_id': int(user_id)})
-
-
-
-    async def get_total_renamed_size(self):
-        result = await self.global_stats_col.find_one({"_id": "total_renamed_size"})
-        return result.get("value", 0) if result else 0
-
-    async def update_total_renamed_size(self, size):
-        await self.global_stats_col.update_one(
-            {"_id": "total_renamed_size"},
-            {"$set": {"value": size}},
-            upsert=True
-	)	
 	
     async def set_user_attr(self, id, field, value):
         await self.user_col.update_one({'_id': int(id)}, {'$set': {field: value}})
