@@ -73,15 +73,15 @@ async def edit_bio(client: Client, message: Message):
     else:
         await message.reply("⚠ You haven't set your profile yet. Use /set_profile to create one.")
 
-@Client.on_callback_query(filters.regex("show_bio"))
+@Client.on_callback_query(filters.regex(r"^show_bio_(\d+)$"))
 async def show_bio(client: Client, callback_query):
-    user_id = callback_query.from_user.id
+    user_id = int(callback_query.data.split("_")[2])  # Extract user ID from callback data
     profile = await db.get_profile(user_id)
 
     if profile and profile.get("bio", "Not set") != "Not set":
         await callback_query.answer(profile["bio"], show_alert=True)
     else:
-        await callback_query.answer("⚠ No bio set yet!", show_alert=True)
+        await callback_query.answer("⚠ No bio set yet!", show_alert=True)  
 
 @Client.on_message(filters.command("del_profile"))
 async def delete_profile(client: Client, message: Message):
@@ -181,7 +181,7 @@ async def handle_text(client: Client, message: Message):
 
         if step in ["bio", "edit_bio"]:
             if len(message.text) > 200:
-                await message.reply("⚠ **Bio must be 200 characters or less.** Please shorten it.", show_alert=True)
+                await message.reply("⚠ **Bio must be 200 characters or less.** Please shorten it.")  # Removed show_alert
                 return
 
         if step == "edit_bio":
@@ -207,7 +207,7 @@ async def handle_text(client: Client, message: Message):
         else:
             user_states[user_id]["step"] = next_step
             await message.reply(f"✅ **{step.capitalize()} saved!** Now, enter your **{next_step}** (or use /skip).")
-
+            
 async def save_profile(user_id, message):
     """Save the collected profile data to the database."""
     profile_data = {
@@ -223,3 +223,59 @@ async def save_profile(user_id, message):
 
     # ✅ **Final confirmation message**
     await message.reply("✅ **Profile saved!** Use /profile to view it.")
+
+
+@Client.on_message(filters.command("user"))
+async def view_user_profile(client: Client, message: Message):
+    # Check if the user provided a username or user ID
+    if len(message.command) < 2:
+        await message.reply("⚠ **Usage:** `/user <user_id or username>`")
+        return
+
+    target = message.command[1]
+
+    try:
+        # Try to parse the target as a user ID
+        user_id = int(target)
+        user = await client.get_users(user_id)
+    except ValueError:
+        # If it's not a user ID, assume it's a username
+        try:
+            user = await client.get_users(target)
+        except Exception as e:
+            await message.reply(f"⚠ **User not found.** Please check the username or user ID.")
+            return
+    except Exception as e:
+        await message.reply(f"⚠ **An error occurred:** {e}")
+        return
+
+    # Fetch the profile from the database
+    profile = await db.get_profile(user.id)
+
+    if profile:
+        # Format birthday for display
+        birthday = profile.get("birthday", "Not set")
+        if birthday != "Not set":
+            age = calculate_age(birthday)  # Calculate age
+            birthday = datetime.strptime(birthday, "%Y-%m-%d").strftime("%d %b %Y") + f" ({age})"  # Add age in brackets
+
+        # Create inline buttons (optional)
+        buttons = InlineKeyboardMarkup(
+            [
+                [InlineKeyboardButton("📝 Bio", callback_data=f"show_bio_{user.id}")]
+            ]
+        )
+
+        await message.reply_photo(
+            photo=profile.get("photo", "https://envs.sh/On-.jpg"),
+            caption=(
+                f"👤 **Name:** {profile['name']}\n"
+                f"📍 **Location:** {profile['location']}\n"
+                f"🎂 **Birthday:** {birthday}\n\n"
+                f"🆔 **User ID:** `{user.id}`"
+            ),
+            reply_markup=buttons
+        )
+    else:
+        await message.reply("⚠ **This user hasn't set up their profile yet.**")       
+        
