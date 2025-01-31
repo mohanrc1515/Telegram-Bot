@@ -1,6 +1,7 @@
 from pyrogram import Client, filters
 from datetime import datetime
 from helper.database import db
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from helper.utils import calculate_age
 from config import Config
 
