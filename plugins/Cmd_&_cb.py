@@ -47,7 +47,7 @@ async def user_profile(client: Client, message: Message):
         city = profile.get("city", "Not Set")
         country = profile.get("country", "Not Set")
         age = profile.get("age", "Not Set")
-        photo = profile.get("photo", "https://example.com/default.jpg")
+        photo = profile.get("photo", "https://envs.sh/On-.jpg")
 
         await message.reply_photo(
             photo=photo,
