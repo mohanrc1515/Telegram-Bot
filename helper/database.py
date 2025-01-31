@@ -73,4 +73,31 @@ class Database:
     async def get_db_size(self):
         return (await self.db.command("dbstats"))['dataSize']
         
+    async def get_profile_by_id_or_username(self, identifier):
+        """Fetch user profile by ID or username."""
+        query = "SELECT * FROM profiles WHERE user_id = ? OR username = ?"
+        return await self.fetch_one(query, (identifier, identifier))
+
+    async def get_like_count(self, user_id):
+        """Get the total number of likes on a profile."""
+        query = "SELECT COUNT(*) FROM likes WHERE liked_user_id = ?"
+        result = await self.fetch_one(query, (user_id,))
+        return result[0] if result else 0
+
+    async def toggle_like(self, liker_id, liked_user_id):
+        """Toggle like status for a profile."""
+        query_check = "SELECT * FROM likes WHERE liker_id = ? AND liked_user_id = ?"
+        existing_like = await self.fetch_one(query_check, (liker_id, liked_user_id))
+
+        if existing_like:
+            # Unlike if already liked
+            query_remove = "DELETE FROM likes WHERE liker_id = ? AND liked_user_id = ?"
+            await self.execute(query_remove, (liker_id, liked_user_id))
+            return False  # Unlike action
+        else:
+            # Like if not already liked
+            query_add = "INSERT INTO likes (liker_id, liked_user_id) VALUES (?, ?)"
+            await self.execute(query_add, (liker_id, liked_user_id))
+            return True  # Like action
+
 db = Database(Config.DB_URL, Config.DB_NAME)
