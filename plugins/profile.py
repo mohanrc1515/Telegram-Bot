@@ -216,61 +216,12 @@ async def save_profile(user_id, message):
 
 
 @Client.on_message(filters.command("check"))
-async def view_user_profile(client, message):
-    # Check if the user provided a username or user ID
-    if len(message.command) < 2:
-        await message.reply("⚠ **Usage:** `/check <user_id or username>`")
-        return
-
-    target = message.command[1]
-
+async def check_command(client: Client, message: Message):
     try:
-        # Try to parse the target as a user ID
-        user_id = int(target)
-        user = await client.get_users(user_id)
-    except ValueError:
-        # If it's not a user ID, assume it's a username
-        try:
-            user = await client.get_users(target)
-        except Exception as e:
-            await message.reply("⚠ **User not found.** Please check the username or user ID.")
-            return
+        # Your check command logic
+        await message.reply("Check command executed successfully!")
     except Exception as e:
-        await message.reply(f"⚠ **An error occurred:** {e}")
-        return
-
-    # Fetch the profile from the database
-    profile = await db.get_profile(user.id)
-
-    if profile:
-        # Format birthday for display
-        birthday = profile.get("birthday", "Not set")
-        if birthday != "Not set":
-            age = calculate_age(birthday)  # Calculate age
-            birthday = datetime.strptime(birthday, "%Y-%m-%d").strftime("%d %b %Y") + f" ({age})"  # Add age in brackets
-
-        # Create inline buttons (horizontal alignment: Edit | Bio)
-        buttons = InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton("📝 Bio", callback_data=f"show_bio_{user.id}")
-                ]
-            ]
-        )
-
-        await message.reply_photo(
-            photo=profile.get("photo", "https://envs.sh/On-.jpg"),
-            caption=(
-                f"👤 **Name:** {profile['name']}\n"
-                f"📍 **Location:** {profile['location']}\n"
-                f"🎂 **Birthday:** {birthday}\n\n"
-                f"🆔 **User ID:** `{user.id}`"
-            ),
-            reply_markup=buttons
-        )
-    else:
-        await message.reply("⚠ **This user hasn't set up their profile yet.**")
-
+        print(f"Error occurred: {e}")
 
 @Client.on_callback_query(filters.regex(r"^show_bio_(\d+)$"))
 async def show_bio(client: Client, callback_query):
