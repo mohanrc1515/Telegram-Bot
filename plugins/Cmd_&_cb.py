@@ -2,6 +2,7 @@ import os
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from helper.database import db
+from config import Config
 
 
 # 📌 Command: /start
