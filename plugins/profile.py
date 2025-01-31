@@ -45,7 +45,7 @@ async def profile_handler(client: Client, message: Message):
         buttons = InlineKeyboardMarkup(
             [
                 [InlineKeyboardButton("✏ Edit", callback_data="edit_profile"),
-                 InlineKeyboardButton("📝 Bio", callback_data=f"show_bio_{user.id}")]
+                 InlineKeyboardButton("📝 Bio", callback_data=f"show_bio_{user_id}")]
             ]
         )
 
@@ -216,7 +216,7 @@ async def save_profile(user_id, message):
 
 
 @Client.on_message(filters.command("check"))
-async def view_user_profile(client: Client, message: Message):
+async def view_user_profile(client, message):
     # Check if the user provided a username or user ID
     if len(message.command) < 2:
         await message.reply("⚠ **Usage:** `/check <user_id or username>`")
@@ -253,7 +253,6 @@ async def view_user_profile(client: Client, message: Message):
         buttons = InlineKeyboardMarkup(
             [
                 [
-                    InlineKeyboardButton("✏ Edit", callback_data="edit_profile"),
                     InlineKeyboardButton("📝 Bio", callback_data=f"show_bio_{user.id}")
                 ]
             ]
