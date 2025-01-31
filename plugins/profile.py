@@ -28,8 +28,6 @@ async def profile_handler(client: Client, message: Message):
     profile = await db.get_profile(user_id)
 
     if profile:
-        is_premium = "Yes" if profile.get("is_premium", "No") == "Yes" else "No"
-
         edit_button = InlineKeyboardMarkup(
             [[InlineKeyboardButton("✏ Edit Profile", callback_data="edit_profile")]]
         )
@@ -38,17 +36,16 @@ async def profile_handler(client: Client, message: Message):
             photo=profile.get("photo", "https://example.com/default.jpg"),
             caption=(
                 f"📌 **Your Profile**\n"
-                f"👤 **Real Name:** {profile['name']}\n"
+                f"👤 **Real Name:** {profile.get('name', 'Confidential')}\n"
                 f"🆔 **User ID:** `{user_id}`\n"
-                f"📍 **Location:** {profile['city']}, {profile['country']}\n"
-                f"🎂 **Age:** {profile['age']}\n"
-                f"💎 **Premium User:** {is_premium}"
+                f"📍 **Location:** {profile.get('city', 'Unknown')}, {profile.get('country', 'Unknown')}\n"
+                f"🎂 **Age:** {profile.get('age', 'Not Provided')}"
             ),
             reply_markup=edit_button
         )
     else:
         await message.reply("⚠ You haven't set your profile yet. Use /set_profile to create one.")
-
+        
 @Client.on_message(filters.command("cancel"))
 async def cancel_setup(client: Client, message: Message):
     user_id = message.from_user.id
@@ -298,3 +295,145 @@ async def save_profile(user_id, message):
 
     # ✅ **Final confirmation message**
     await message.reply("✅ **Profile saved!** Use /profile to view it.")
+
+# 📌 Command: /user <username/user_id>
+@Client.on_message(filters.private & filters.command("user"))
+async def user_profile(client: Client, message: Message):
+    args = message.command[1:]
+    if not args:
+        await message.reply("⚠ **Please provide a username or user ID.**\nExample: `/user @username` or `/user 12345678`")
+        return
+
+    target = args[0]
+
+    try:
+        if target.startswith("@"):
+            target_user = await client.get_users(target)
+            target_id = target_user.id
+        else:
+            if not target.isdigit():
+                await message.reply("⚠ **Invalid user ID.** User IDs must be numeric.")
+                return
+            target_id = int(target)
+    except Exception:
+        await message.reply("⚠ **User not found.** Please check the username.")
+        return
+
+    requester_id = message.from_user.id
+
+    # Check if the requester has blocked the target user
+    blocked_users = await db.get_blocked_users(requester_id) or []
+    if target_id in blocked_users:
+        await message.reply("🚫 **You have blocked this user.** Unblock them first to view their profile.")
+        return
+
+    # Check if the target user has blocked the requester
+    target_blocked_users = await db.get_blocked_users(target_id) or []
+    if requester_id in target_blocked_users:
+        await message.reply("🚫 **This user has blocked you.** You cannot view their profile.")
+        return
+
+    # Fetch profile from the database
+    profile = await db.get_profile(target_id)
+    if profile:
+        city = profile.get("city", "Not Set")
+        country = profile.get("country", "Not Set")
+        age = profile.get("age", "Not Set")
+        photo = profile.get("photo", "https://envs.sh/On-.jpg")
+
+        await message.reply_photo(
+            photo=photo,
+            caption=(
+                f"📌 **User Profile**\n"
+                f"👤 **Real Name:** {name}\n"
+                f"🆔 **User ID:** `{target_id}`\n"
+                f"📍 **Location:** {city}, {country}\n"
+                f"🎂 **Age:** {age}\n"
+            )
+        )
+    else:
+        await message.reply("⚠ **This user has not set up their profile.**")
+
+# 📌 Command: /block <username/user_id>
+@Client.on_message(filters.private & filters.command("block"))
+async def block_user(client: Client, message: Message):
+    args = message.command[1:]
+    if not args:
+        await message.reply("⚠ **Please provide a username or user ID to block.**\nExample: `/block @username` or `/block 12345678`")
+        return
+
+    target = args[0]
+
+    try:
+        if target.startswith("@"):
+            target_user = await client.get_users(target)
+            target_id = target_user.id
+        else:
+            if not target.isdigit():
+                await message.reply("⚠ **Invalid user ID.** User IDs must be numeric.")
+                return
+            target_id = int(target)
+    except Exception:
+        await message.reply("⚠ **User not found.** Please check the username.")
+        return
+
+    requester_id = message.from_user.id
+
+    if target_id == requester_id:
+        await message.reply("⚠ **You cannot block yourself!**")
+        return
+
+    blocked_users = await db.get_blocked_users(requester_id) or []
+    if target_id in blocked_users:
+        await message.reply("⚠ **This user is already blocked.**")
+        return
+
+    await db.block_user(requester_id, target_id)
+    await message.reply(f"🚫 **User `{target_id}` has been blocked.** They will no longer see your profile.")
+
+# 📌 Command: /unblock <username/user_id>
+@Client.on_message(filters.private & filters.command("unblock"))
+async def unblock_user(client: Client, message: Message):
+    args = message.command[1:]
+    if not args:
+        await message.reply("⚠ **Please provide a username or user ID to unblock.**\nExample: `/unblock @username` or `/unblock 12345678`")
+        return
+
+    target = args[0]
+
+    try:
+        if target.startswith("@"):
+            target_user = await client.get_users(target)
+            target_id = target_user.id
+        else:
+            if not target.isdigit():
+                await message.reply("⚠ **Invalid user ID.** User IDs must be numeric.")
+                return
+            target_id = int(target)
+    except Exception:
+        await message.reply("⚠ **User not found.** Please check the username.")
+        return
+
+    requester_id = message.from_user.id
+
+    blocked_users = await db.get_blocked_users(requester_id) or []
+    if target_id not in blocked_users:
+        await message.reply("⚠ **This user is not in your block list.**")
+        return
+
+    await db.unblock_user(requester_id, target_id)
+    await message.reply(f"✅ **User `{target_id}` has been unblocked.** They can now see your profile.")
+
+# 📌 Command: /blocklist (View blocked users)
+@Client.on_message(filters.private & filters.command("blocklist"))
+async def view_blocklist(client: Client, message: Message):
+    user_id = message.from_user.id
+    blocked_users = await db.get_blocked_users(user_id) or []
+
+    if not blocked_users:
+        await message.reply("✅ **You have not blocked anyone.**")
+    else:
+        blocked_list_text = "\n".join([f"🔹 `{uid}`" for uid in blocked_users])
+        await message.reply(f"🚫 **Blocked Users:**\n{blocked_list_text}")
+        
+
