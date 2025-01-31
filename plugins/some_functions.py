@@ -154,22 +154,6 @@ async def delete_profile(client: Client, message: Message):
         logger.error(f"Error in delete_profile for user {user_id}: {e}")
         await message.reply("An error occurred while deleting your profile. Please try again later.")
 
-# Command: /cancel
-@Client.on_message(filters.command("cancel"))
-async def cancel_setup(client: Client, message: Message):
-    user_id = message.from_user.id
-
-    try:
-        if user_id in user_states:
-            del user_states[user_id]
-            await db.delete_partial_profile(user_id)
-            await message.reply("❌ **Profile setup canceled.**")
-        else:
-            await message.reply("⚠ You're not in profile setup mode.")
-    except Exception as e:
-        logger.error(f"Error in cancel_setup for user {user_id}: {e}")
-        await message.reply("An error occurred while canceling the setup. Please try again later.")
-
 # Handle profile photo
 @Client.on_message(filters.photo)
 async def handle_photo(client: Client, message: Message):
