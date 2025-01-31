@@ -44,8 +44,8 @@ async def profile_handler(client: Client, message: Message):
         # Create inline buttons
         buttons = InlineKeyboardMarkup(
             [
-                [InlineKeyboardButton("✏ Edit Profile", callback_data="edit_profile")],
-                [InlineKeyboardButton("📝 Bio", callback_data="show_bio")]
+                [InlineKeyboardButton("✏ Edit", callback_data="edit_profile"),
+                 InlineKeyboardButton("📝 Bio", callback_data=f"show_bio_{user.id}")]
             ]
         )
 
@@ -72,16 +72,6 @@ async def edit_bio(client: Client, message: Message):
         user_states[user_id] = {"step": "edit_bio"}  # Set state for bio editing
     else:
         await message.reply("⚠ You haven't set your profile yet. Use /set_profile to create one.")
-
-@Client.on_callback_query(filters.regex(r"^show_bio_(\d+)$"))
-async def show_bio(client: Client, callback_query):
-    user_id = int(callback_query.data.split("_")[2])  # Extract user ID from callback data
-    profile = await db.get_profile(user_id)
-
-    if profile and profile.get("bio", "Not set") != "Not set":
-        await callback_query.answer(profile["bio"], show_alert=True)
-    else:
-        await callback_query.answer("⚠ No bio set yet!", show_alert=True)  
 
 @Client.on_message(filters.command("del_profile"))
 async def delete_profile(client: Client, message: Message):
@@ -225,11 +215,11 @@ async def save_profile(user_id, message):
     await message.reply("✅ **Profile saved!** Use /profile to view it.")
 
 
-@Client.on_message(filters.command("user"))
+@Client.on_message(filters.command("check"))
 async def view_user_profile(client: Client, message: Message):
     # Check if the user provided a username or user ID
     if len(message.command) < 2:
-        await message.reply("⚠ **Usage:** `/user <user_id or username>`")
+        await message.reply("⚠ **Usage:** `/check <user_id or username>`")
         return
 
     target = message.command[1]
@@ -243,7 +233,7 @@ async def view_user_profile(client: Client, message: Message):
         try:
             user = await client.get_users(target)
         except Exception as e:
-            await message.reply(f"⚠ **User not found.** Please check the username or user ID.")
+            await message.reply("⚠ **User not found.** Please check the username or user ID.")
             return
     except Exception as e:
         await message.reply(f"⚠ **An error occurred:** {e}")
@@ -259,10 +249,13 @@ async def view_user_profile(client: Client, message: Message):
             age = calculate_age(birthday)  # Calculate age
             birthday = datetime.strptime(birthday, "%Y-%m-%d").strftime("%d %b %Y") + f" ({age})"  # Add age in brackets
 
-        # Create inline buttons (optional)
+        # Create inline buttons (horizontal alignment: Edit | Bio)
         buttons = InlineKeyboardMarkup(
             [
-                [InlineKeyboardButton("📝 Bio", callback_data=f"show_bio_{user.id}")]
+                [
+                    InlineKeyboardButton("✏ Edit", callback_data="edit_profile"),
+                    InlineKeyboardButton("📝 Bio", callback_data=f"show_bio_{user.id}")
+                ]
             ]
         )
 
@@ -277,5 +270,15 @@ async def view_user_profile(client: Client, message: Message):
             reply_markup=buttons
         )
     else:
-        await message.reply("⚠ **This user hasn't set up their profile yet.**")       
-        
+        await message.reply("⚠ **This user hasn't set up their profile yet.**")
+
+
+@Client.on_callback_query(filters.regex(r"^show_bio_(\d+)$"))
+async def show_bio(client: Client, callback_query):
+    user_id = int(callback_query.data.split("_")[2])  # Extract user ID from callback data
+    profile = await db.get_profile(user_id)
+
+    if profile and profile.get("bio", "Not set") != "Not set":
+        await callback_query.answer(profile["bio"], show_alert=True)
+    else:
+        await callback_query.answer("⚠ No bio set yet!", show_alert=True)
