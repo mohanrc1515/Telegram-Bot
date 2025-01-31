@@ -147,7 +147,7 @@ async def view_blocklist(client: Client, message: Message):
 
 # 📌 Command: /start
 @Client.on_message(filters.private & filters.command("start"))
-async def start(client: Client, message: Message):
+async def start(client, message):
     user = message.from_user
     await db.add_user(client, message)  
 
