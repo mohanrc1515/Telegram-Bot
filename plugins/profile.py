@@ -3,6 +3,8 @@ from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from datetime import datetime  # For birthday validation and age calculation
 from helper.database import db  # Import database helper
+
+# Temporary storage for user states during profile setup
 user_states = {}
 
 def calculate_age(birthday: str) -> int:
@@ -50,7 +52,6 @@ async def profile_handler(client: Client, message: Message):
         await message.reply_photo(
             photo=profile.get("photo", "https://envs.sh/On-.jpg"),
             caption=(
-                f"🌟 **Your Profile** 🌟\n\n"
                 f"👤 **Name:** {profile['name']}\n"
                 f"📍 **Location:** {profile['location']}\n"
                 f"🎂 **Birthday:** {birthday}\n\n"
@@ -58,6 +59,17 @@ async def profile_handler(client: Client, message: Message):
             ),
             reply_markup=buttons
         )
+    else:
+        await message.reply("⚠ You haven't set your profile yet. Use /set_profile to create one.")
+
+@Client.on_message(filters.command("editbio"))
+async def edit_bio(client: Client, message: Message):
+    user_id = message.from_user.id
+    profile = await db.get_profile(user_id)
+
+    if profile:
+        await message.reply("✏ **Please send your new bio (max 200 characters):**")
+        user_states[user_id] = {"step": "edit_bio"}  # Set state for bio editing
     else:
         await message.reply("⚠ You haven't set your profile yet. Use /set_profile to create one.")
 
@@ -158,7 +170,7 @@ async def handle_text(client: Client, message: Message):
 
     step = user_states[user_id]["step"]
 
-    if step in ["name", "location", "birthday", "bio"]:
+    if step in ["name", "location", "birthday", "bio", "edit_bio"]:
         if step == "birthday":
             try:
                 # Validate birthday format (YYYY-MM-DD)
@@ -167,8 +179,19 @@ async def handle_text(client: Client, message: Message):
                 await message.reply("⚠ **Invalid date format!** Please use `YYYY-MM-DD`. (or use /skip)")
                 return
 
-        if step == "bio" and len(message.text) > 250:
-            await message.reply("⚠ **Bio must be 250 characters or less.** Please shorten it. (or use /skip)", show_alert=True)
+        if step in ["bio", "edit_bio"]:
+            if len(message.text) > 200:
+                await message.reply("⚠ **Bio must be 200 characters or less.** Please shorten it.", show_alert=True)
+                return
+
+        if step == "edit_bio":
+            # Update bio directly
+            profile = await db.get_profile(user_id)
+            if profile:
+                profile["bio"] = message.text
+                await db.save_profile(user_id, profile)
+                del user_states[user_id]
+                await message.reply("✅ **Bio updated successfully!** Use /profile to view it.")
             return
 
         user_states[user_id][step] = message.text
@@ -197,4 +220,6 @@ async def save_profile(user_id, message):
     }
     await db.save_profile(user_id, profile_data)
     del user_states[user_id]
+
+    # ✅ **Final confirmation message**
     await message.reply("✅ **Profile saved!** Use /profile to view it.")
