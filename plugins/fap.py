@@ -36,7 +36,7 @@ async def fapped_command(client, message):
     await message.reply("Your timer has been reset. Stay strong next time! 💪")
 
 # Handle text messages that are not commands
-@Client.on_message(filters.text & ~filters.command(["start", "nofap", "fapped"]))
+@Client.on_message(filters.text & ~filters.command(["nofap", "fapped"]))
 async def handle_text_messages(client, message):
     user_id = message.from_user.id
 
