@@ -24,7 +24,7 @@ async def start(client, message):
 
 
 
-@Client.on_message(filters.private & filters.command("start"))
+@Client.on_message(filters.private & filters.command("check"))
 async def check_command(client, message):
     try:
         # Your check command logic
