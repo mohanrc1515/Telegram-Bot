@@ -1,64 +1,142 @@
+import os
 from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-from helper.database import db  # Import the database helper
+from pyrogram.types import Message
+from helper.database import db  # Import database helper
 
+# 📌 Command: /user <username/user_id>
 @Client.on_message(filters.command("user"))
-async def user_handler(client: Client, message: Message):
-    args = message.command[1:]  # Get the arguments after /user
+async def user_profile(client: Client, message: Message):
+    args = message.command[1:]  # Extract username or user_id
     if not args:
-        await message.reply("❌ Please provide a user ID or username.\nExample: `/user 123456789` or `/user @username`")
+        await message.reply("⚠ **Please provide a username or user ID.**\nExample: `/user @username` or `/user 12345678`")
         return
 
-    identifier = args[0]
+    target = args[0]
     
-    # Fetch user profile from the database
-    profile = await db.get_profile_by_id_or_username(identifier)
-    if not profile:
-        await message.reply("❌ User profile not found.")
+    # Get target user ID
+    if target.startswith("@"):
+        target_user = await client.get_users(target)
+        if not target_user:
+            await message.reply("⚠ **User not found.** Please check the username.")
+            return
+        target_id = target_user.id
+    else:
+        if not target.isdigit():
+            await message.reply("⚠ **Invalid user ID.** User IDs must be numeric.")
+            return
+        target_id = int(target)
+
+    requester_id = message.from_user.id
+
+    # Check if the requester has blocked the target user
+    blocked_users = await db.get_blocked_users(requester_id)
+    if target_id in blocked_users:
+        await message.reply("🚫 **You have blocked this user.** Unblock them first to view their profile.")
         return
 
-    user_id = profile["user_id"]
-    likes_count = await db.get_like_count(user_id)
+    # Check if the target user has blocked the requester
+    target_blocked_users = await db.get_blocked_users(target_id)
+    if requester_id in target_blocked_users:
+        await message.reply("🚫 **This user has blocked you.** You cannot view their profile.")
+        return
 
-    # Create "Like" button
-    like_button = InlineKeyboardMarkup(
-        [[InlineKeyboardButton(f"👍 {likes_count} Likes", callback_data=f"like_{user_id}")]]
-    )
+    # Fetch profile from the database
+    profile = await db.get_profile(target_id)
+    if profile:
+        first_name = profile.get("first_name", "N/A")
+        last_name = profile.get("last_name", "N/A")
+        is_premium = "Yes" if profile.get("is_premium", "No") == "Yes" else "No"
+        dc_id = profile.get("dc_id", "Unknown")
 
-    await message.reply_photo(
-        photo=profile["photo"],
-        caption=(
-            f"**Profile Card**\n"
-            f"👤 **Name:** {profile['name']}\n"
-            f"📛 **Telegram Name:** {profile['first_name']} {profile['last_name']}\n"
-            f"🆔 **User ID:** `{user_id}`\n"
-            f"🌍 **Location:** {profile['city']}, {profile['country']}\n"
-            f"🎂 **Age:** {profile['age']}\n"
-            f"💎 **Premium:** {'Yes' if profile['is_premium'] else 'No'}\n"
-        ),
-        reply_markup=like_button
-    )
+        await message.reply_photo(
+            photo=profile.get("photo", "https://example.com/default.jpg"),
+            caption=(
+                f"📌 **User Profile**\n"
+                f"👤 **Real Name:** {profile['name']}\n"
+                f"📛 **Telegram Name:** {first_name} {last_name}\n"
+                f"🆔 **User ID:** `{target_id}`\n"
+                f"🗂 **DC Number:** `{dc_id}`\n"
+                f"📍 **Location:** {profile['city']}, {profile['country']}\n"
+                f"🎂 **Age:** {profile['age']}\n"
+                f"💎 **Premium User:** {is_premium}"
+            )
+        )
+    else:
+        await message.reply("⚠ **This user has not set up their profile.**")
 
-# Handle Like Button
-@Client.on_callback_query(filters.regex(r"^like_(\d+)$"))
-async def handle_like(client: Client, callback_query: CallbackQuery):
-    user_id = int(callback_query.data.split("_")[1])  # Extract the user ID
-    liker_id = callback_query.from_user.id  # The user who clicked the button
-    
-    # Toggle like status in the database
-    liked = await db.toggle_like(liker_id, user_id)
+# 📌 Command: /block <username/user_id>
+@Client.on_message(filters.command("block"))
+async def block_user(client: Client, message: Message):
+    args = message.command[1:]
+    if not args:
+        await message.reply("⚠ **Please provide a username or user ID to block.**\nExample: `/block @username` or `/block 12345678`")
+        return
 
-    # Get updated like count
-    likes_count = await db.get_like_count(user_id)
+    target = args[0]
 
-    # Update the button text dynamically
-    like_button = InlineKeyboardMarkup(
-        [[InlineKeyboardButton(f"👍 {likes_count} Likes", callback_data=f"like_{user_id}")]]
-    )
+    # Get target user ID
+    if target.startswith("@"):
+        target_user = await client.get_users(target)
+        if not target_user:
+            await message.reply("⚠ **User not found.** Please check the username.")
+            return
+        target_id = target_user.id
+    else:
+        if not target.isdigit():
+            await message.reply("⚠ **Invalid user ID.** User IDs must be numeric.")
+            return
+        target_id = int(target)
 
-    # Edit the message to reflect the new like count
-    await callback_query.message.edit_reply_markup(reply_markup=like_button)
+    requester_id = message.from_user.id
 
-    # Send an alert message
-    action = "liked" if liked else "unliked"
-    await callback_query.answer(f"You {action} the profile of {user_id}!")
+    if target_id == requester_id:
+        await message.reply("⚠ **You cannot block yourself!**")
+        return
+
+    # Add to blocked list
+    await db.block_user(requester_id, target_id)
+    await message.reply(f"🚫 **User `{target_id}` has been blocked.** They will no longer see your profile.")
+
+# 📌 Command: /unblock <username/user_id>
+@Client.on_message(filters.command("unblock"))
+async def unblock_user(client: Client, message: Message):
+    args = message.command[1:]
+    if not args:
+        await message.reply("⚠ **Please provide a username or user ID to unblock.**\nExample: `/unblock @username` or `/unblock 12345678`")
+        return
+
+    target = args[0]
+
+    # Get target user ID
+    if target.startswith("@"):
+        target_user = await client.get_users(target)
+        if not target_user:
+            await message.reply("⚠ **User not found.** Please check the username.")
+            return
+        target_id = target_user.id
+    else:
+        if not target.isdigit():
+            await message.reply("⚠ **Invalid user ID.** User IDs must be numeric.")
+            return
+        target_id = int(target)
+
+    requester_id = message.from_user.id
+
+    # Remove from blocked list
+    success = await db.unblock_user(requester_id, target_id)
+    if success:
+        await message.reply(f"✅ **User `{target_id}` has been unblocked.** They can now see your profile.")
+    else:
+        await message.reply("⚠ **This user is not in your block list.**")
+
+# 📌 Command: /blocklist (View blocked users)
+@Client.on_message(filters.command("blocklist"))
+async def view_blocklist(client: Client, message: Message):
+    user_id = message.from_user.id
+    blocked_users = await db.get_blocked_users(user_id)
+
+    if not blocked_users:
+        await message.reply("✅ **You have not blocked anyone.**")
+    else:
+        blocked_list_text = "\n".join([f"🔹 `{uid}`" for uid in blocked_users])
+        await message.reply(f"🚫 **Blocked Users:**\n{blocked_list_text}")
