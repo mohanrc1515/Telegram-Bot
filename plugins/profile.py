@@ -215,14 +215,6 @@ async def save_profile(user_id, message):
     await message.reply("✅ **Profile saved!** Use /profile to view it.")
 
 
-@Client.on_message(filters.command("check"))
-async def check_command(client: Client, message: Message):
-    try:
-        # Your check command logic
-        await message.reply("Check command executed successfully!")
-    except Exception as e:
-        print(f"Error occurred: {e}")
-
 @Client.on_callback_query(filters.regex(r"^show_bio_(\d+)$"))
 async def show_bio(client: Client, callback_query):
     user_id = int(callback_query.data.split("_")[2])  # Extract user ID from callback data
