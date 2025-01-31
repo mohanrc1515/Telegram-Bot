@@ -33,67 +33,7 @@ async def profile_handler(client: Client, message: Message):
         )
 
         await message.reply_photo(
-            photo=profile.get("photo", "https://example.com/default.jpg"),
-            caption=(
-                f"📌 **Your Profile**\n"
-                f"👤 **Real Name:** {profile.get('name', 'Confidential')}\n"
-                f"🆔 **User ID:** `{user_id}`\n"
-                f"📍 **Location:** {profile.get('city', 'Unknown')}, {profile.get('country', 'Unknown')}\n"
-                f"🎂 **Age:** {profile.get('age', 'Not Provided')}"
-            ),
-            reply_markup=edit_button
-        )
-    else:
-        await message.reply("⚠ You haven't set your profile yet. Use /set_profile to create one.")
-        
-@Client.on_message(filters.command("cancel"))
-async def cancel_setup(client: Client, message: Message):
-    user_id = message.from_user.id
-    if user_id in user_states:
-        del user_states[user_id]
-
-        # Remove partially saved profile if exists
-        await db.delete_partial_profile(user_id)
-        
-        await message.reply("❌ **Profile setup canceled.**")
-    else:
-        await message.reply("⚠ You're not in profile setup mode.")
-
-import os
-from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
-from helper.database import db  # Import database helper
-
-# Temporary storage for user states during profile setup
-user_states = {}
-
-@Client.on_message(filters.command("set_profile"))
-async def set_profile_handler(client: Client, message: Message):
-    user_id = message.from_user.id
-    user = message.from_user
-    is_premium = "Yes" if getattr(user, "is_premium", False) else "No"
-
-    user_states[user_id] = {
-        "step": "photo",
-        "is_premium": is_premium
-    }
-
-    # Store premium status early in DB
-    await db.update_user_premium(user_id, is_premium)
-
-    await message.reply("📸 Please send your **profile picture**.")
-
-@Client.on_message(filters.command("profile"))
-async def profile_handler(client: Client, message: Message):
-    user_id = message.from_user.id
-    profile = await db.get_profile(user_id)
-
-        edit_button = InlineKeyboardMarkup(
-            [[InlineKeyboardButton("✏ Edit Profile", callback_data="edit_profile")]]
-        )
-
-        await message.reply_photo(
-            photo=profile.get("photo", "https://example.com/default.jpg"),
+            photo=profile.get("photo", "https://envs.sh/On-.jpg"),
             caption=(
                 f"📌 **Your Profile**\n"
                 f"👤 **Real Name:** {profile['name']}\n"
