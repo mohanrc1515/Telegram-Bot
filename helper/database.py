@@ -11,6 +11,7 @@ class Database:
         self.user_col = self.db.user        
         self.req_col = self.db.channels        
         self.profile_col = self.db.profiles
+        self.blocked_col = self.db.blocked  # ✅ Added collection for blocked users
 
     def new_user(self, id):
         return {
@@ -42,7 +43,7 @@ class Database:
         user = await self.user_col.find_one({'_id': int(id)})
         return user.get(field, default) if user else default
 
-    # Profile-related functions
+    # 📌 Profile-related functions
     async def get_profile(self, user_id):
         """Retrieve user profile from database."""
         return await self.profile_col.find_one({"user_id": user_id})
@@ -55,17 +56,15 @@ class Database:
             upsert=True
         )
 
-    # Check if the user has already sent a join request to the specific channel
+    # 📌 Join request functions
     async def find_join_req(self, user_id, channel_id):
         """Check if a join request exists for the given user ID and channel ID."""
         return await self.req_col.find_one({'id': user_id, 'channel_id': channel_id}) is not None
 
-    # Add a join request entry to the database with user ID and channel ID
     async def add_join_req(self, user_id, channel_id):
         """Add a new join request for the given user ID and channel ID."""
         await self.req_col.insert_one({'id': user_id, 'channel_id': channel_id})
 
-    # Delete all join requests (clear the collection)
     async def del_join_req(self):
         """Clear all join requests from the database."""
         await self.req_col.drop()
@@ -73,31 +72,31 @@ class Database:
     async def get_db_size(self):
         return (await self.db.command("dbstats"))['dataSize']
         
-    async def get_profile_by_id_or_username(self, identifier):
-        """Fetch user profile by ID or username."""
-        query = "SELECT * FROM profiles WHERE user_id = ? OR username = ?"
-        return await self.fetch_one(query, (identifier, identifier))
+    # 📌 Blocked users functions
+    async def get_blocked_users(self, user_id):
+        """Fetch the list of blocked users for a given user."""
+        blocked = await self.blocked_col.find_one({"user_id": user_id})
+        return blocked.get("blocked_users", []) if blocked else []
 
-    async def get_like_count(self, user_id):
-        """Get the total number of likes on a profile."""
-        query = "SELECT COUNT(*) FROM likes WHERE liked_user_id = ?"
-        result = await self.fetch_one(query, (user_id,))
-        return result[0] if result else 0
+    async def block_user(self, user_id, target_id):
+        """Block a user."""
+        blocked = await self.get_blocked_users(user_id)
+        if target_id not in blocked:
+            blocked.append(target_id)
+            await self.blocked_col.update_one(
+                {"user_id": user_id}, {"$set": {"blocked_users": blocked}}, upsert=True
+            )
 
-    async def toggle_like(self, liker_id, liked_user_id):
-        """Toggle like status for a profile."""
-        query_check = "SELECT * FROM likes WHERE liker_id = ? AND liked_user_id = ?"
-        existing_like = await self.fetch_one(query_check, (liker_id, liked_user_id))
+    async def unblock_user(self, user_id, target_id):
+        """Unblock a user."""
+        blocked = await self.get_blocked_users(user_id)
+        if target_id in blocked:
+            blocked.remove(target_id)
+            await self.blocked_col.update_one(
+                {"user_id": user_id}, {"$set": {"blocked_users": blocked}}
+            )
+            return True
+        return False
 
-        if existing_like:
-            # Unlike if already liked
-            query_remove = "DELETE FROM likes WHERE liker_id = ? AND liked_user_id = ?"
-            await self.execute(query_remove, (liker_id, liked_user_id))
-            return False  # Unlike action
-        else:
-            # Like if not already liked
-            query_add = "INSERT INTO likes (liker_id, liked_user_id) VALUES (?, ?)"
-            await self.execute(query_add, (liker_id, liked_user_id))
-            return True  # Like action
-
+# ✅ Initialize database with connection URL and database name
 db = Database(Config.DB_URL, Config.DB_NAME)
