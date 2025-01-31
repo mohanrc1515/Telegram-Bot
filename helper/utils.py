@@ -133,3 +133,16 @@ def extract_user(message: Message) -> Union[int, str]:
         user_id = message.from_user.id
         user_first_name = message.from_user.first_name
     return (user_id, user_first_name)
+
+
+def calculate_age(birthday: str) -> int:
+    """Calculate age from birthday (YYYY-MM-DD format)."""
+    today = datetime.today()
+    birth_date = datetime.strptime(birthday, "%Y-%m-%d")
+    age = today.year - birth_date.year
+
+    # Adjust age if birthday hasn't occurred yet this year
+    if (today.month, today.day) < (birth_date.month, birth_date.day):
+        age -= 1
+
+    return age
