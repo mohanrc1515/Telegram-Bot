@@ -46,6 +46,19 @@ async def profile_handler(client: Client, message: Message):
     else:
         await message.reply("⚠ You haven't set your profile yet. Use /set_profile to create one.")
 
+
+@Client.on_message(filters.command("del_profile"))
+async def delete_profile(client: Client, message: Message):
+    user_id = message.from_user.id
+    profile = await db.get_profile(user_id)
+
+    if profile:
+        await db.delete_profile(user_id)  # Deleting profile from database
+        await message.reply("✅ **Your profile has been deleted successfully.**")
+    else:
+        await message.reply("⚠ You don't have a profile set up yet.")
+        
+
 @Client.on_message(filters.command("cancel"))
 async def cancel_setup(client: Client, message: Message):
     user_id = message.from_user.id
