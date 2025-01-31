@@ -35,7 +35,6 @@ async def help_menu(client, query: CallbackQuery):
         "• /cancel - Cancel profile setup\n"
         "• /nofap - Check your NoFap status\n"
         "• /fapped - Restart your NoFap timer\n"
-        "• /help - Show this help message"
     )
 
     buttons = InlineKeyboardMarkup([
