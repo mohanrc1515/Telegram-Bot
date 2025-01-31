@@ -1,10 +1,21 @@
 import os
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from datetime import datetime  # For birthday validation and age calculation
 from helper.database import db  # Import database helper
-
-# Temporary storage for user states during profile setup
 user_states = {}
+
+def calculate_age(birthday: str) -> int:
+    """Calculate age from birthday (YYYY-MM-DD format)."""
+    today = datetime.today()
+    birth_date = datetime.strptime(birthday, "%Y-%m-%d")
+    age = today.year - birth_date.year
+
+    # Adjust age if birthday hasn't occurred yet this year
+    if (today.month, today.day) < (birth_date.month, birth_date.day):
+        age -= 1
+
+    return age
 
 @Client.on_message(filters.command("set_profile"))
 async def set_profile_handler(client: Client, message: Message):
@@ -22,23 +33,43 @@ async def profile_handler(client: Client, message: Message):
     profile = await db.get_profile(user_id)
 
     if profile:
-        edit_button = InlineKeyboardMarkup(
-            [[InlineKeyboardButton("✏ Edit Profile", callback_data="edit_profile")]]
+        # Format birthday for display
+        birthday = profile.get("birthday", "Not set")
+        if birthday != "Not set":
+            age = calculate_age(birthday)  # Calculate age
+            birthday = datetime.strptime(birthday, "%Y-%m-%d").strftime("%d %b %Y") + f" ({age})"  # Add age in brackets
+
+        # Create inline buttons
+        buttons = InlineKeyboardMarkup(
+            [
+                [InlineKeyboardButton("✏ Edit Profile", callback_data="edit_profile")],
+                [InlineKeyboardButton("📝 Bio", callback_data="show_bio")]
+            ]
         )
 
         await message.reply_photo(
             photo=profile.get("photo", "https://envs.sh/On-.jpg"),
             caption=(
-                f"📌 **Your Profile**\n"
-                f"👤 **Real Name:** {profile['name']}\n"
-                f"🆔 **User ID:** `{user_id}`\n"
-                f"📍 **Location:** {profile['city']}, {profile['country']}\n"
-                f"🎂 **Age:** {profile['age']}\n"
+                f"🌟 **Your Profile** 🌟\n\n"
+                f"👤 **Name:** {profile['name']}\n"
+                f"📍 **Location:** {profile['location']}\n"
+                f"🎂 **Birthday:** {birthday}\n\n"
+                f"🆔 **User ID:** `{user_id}`"
             ),
-            reply_markup=edit_button
+            reply_markup=buttons
         )
     else:
         await message.reply("⚠ You haven't set your profile yet. Use /set_profile to create one.")
+
+@Client.on_callback_query(filters.regex("show_bio"))
+async def show_bio(client: Client, callback_query):
+    user_id = callback_query.from_user.id
+    profile = await db.get_profile(user_id)
+
+    if profile and profile.get("bio", "Not set") != "Not set":
+        await callback_query.answer(profile["bio"], show_alert=True)
+    else:
+        await callback_query.answer("⚠ No bio set yet!", show_alert=True)
 
 @Client.on_message(filters.command("del_profile"))
 async def delete_profile(client: Client, message: Message):
@@ -74,9 +105,9 @@ async def edit_profile(client: Client, callback_query):
             "step": "photo",
             "photo": profile["photo"],
             "name": profile["name"],
-            "city": profile["city"],
-            "country": profile["country"],
-            "age": profile["age"],
+            "location": profile["location"],
+            "birthday": profile["birthday"],
+            "bio": profile["bio"],
         }
         await callback_query.message.reply("✏ Editing profile! **Send your new profile picture** or use /skip.")
     else:
@@ -90,18 +121,19 @@ async def skip_step(client: Client, message: Message):
 
     step = user_states[user_id]["step"]
 
-    # Retain existing values instead of setting "Confidential"
+    # Retain existing values instead of setting "Not set"
     existing_data = await db.get_profile(user_id)
     if existing_data and step in existing_data:
         user_states[user_id][step] = existing_data[step]
     else:
-        user_states[user_id][step] = "Confidential"
+        user_states[user_id][step] = "Not set"
 
     next_step = {
-        "name": "city",
-        "city": "country",
-        "country": "age",
-        "age": "save"
+        "photo": "name",
+        "name": "location",
+        "location": "birthday",
+        "birthday": "bio",
+        "bio": "save"
     }[step]
 
     if next_step == "save":
@@ -126,17 +158,25 @@ async def handle_text(client: Client, message: Message):
 
     step = user_states[user_id]["step"]
 
-    if step in ["name", "city", "country", "age"]:
-        if step == "age" and not message.text.isdigit():
-            await message.reply("⚠ **Please enter a valid age** (numbers only). (or use /skip)")
+    if step in ["name", "location", "birthday", "bio"]:
+        if step == "birthday":
+            try:
+                # Validate birthday format (YYYY-MM-DD)
+                datetime.strptime(message.text, "%Y-%m-%d")
+            except ValueError:
+                await message.reply("⚠ **Invalid date format!** Please use `YYYY-MM-DD`. (or use /skip)")
+                return
+
+        if step == "bio" and len(message.text) > 250:
+            await message.reply("⚠ **Bio must be 250 characters or less.** Please shorten it. (or use /skip)", show_alert=True)
             return
 
-        user_states[user_id][step] = message.text if step != "age" else int(message.text)
+        user_states[user_id][step] = message.text
         next_step = {
-            "name": "city",
-            "city": "country",
-            "country": "age",
-            "age": "save"
+            "name": "location",
+            "location": "birthday",
+            "birthday": "bio",
+            "bio": "save"
         }[step]
 
         if next_step == "save":
@@ -150,164 +190,11 @@ async def save_profile(user_id, message):
     profile_data = {
         "user_id": user_id,
         "photo": user_states[user_id].get("photo", "https://envs.sh/On-.jpg"),
-        "name": user_states[user_id].get("name", "Confidential"),
-        "city": user_states[user_id].get("city", "Confidential"),
-        "country": user_states[user_id].get("country", "Confidential"),
-        "age": user_states[user_id].get("age", "Confidential"),
+        "name": user_states[user_id].get("name", "Not set"),
+        "location": user_states[user_id].get("location", "Not set"),
+        "birthday": user_states[user_id].get("birthday", "Not set"),
+        "bio": user_states[user_id].get("bio", "Not set"),
     }
     await db.save_profile(user_id, profile_data)
     del user_states[user_id]
-
-    # ✅ **Final confirmation message**
     await message.reply("✅ **Profile saved!** Use /profile to view it.")
-
-# 📌 Command: /block <username/user_id>
-@Client.on_message(filters.private & filters.command("block"))
-async def block_user(client: Client, message: Message):
-    args = message.text.split(" ", 1)
-    if len(args) != 2:
-        await message.reply("Please provide a user ID or username.")
-        return
-
-    user_identifier = args[1]
-
-    try:
-        if user_identifier.isdigit():
-            user_id = int(user_identifier)
-            user = await client.get_users(user_id)
-        else:
-            user = await client.get_users(user_identifier)
-            user_id = user.id if user else None
-
-        if not user_id or not user:
-            await message.reply("Invalid user ID or username.")
-            return
-
-        requester_id = message.from_user.id
-
-        if user_id == requester_id:
-            await message.reply("⚠ **You cannot block yourself!**")
-            return
-
-        blocked_users = await db.get_blocked_users(requester_id) or []
-        if user_id in blocked_users:
-            await message.reply("⚠ **This user is already blocked.**")
-            return
-
-        await db.block_user(requester_id, user_id)
-        await message.reply(f"🚫 **User `{user_id}` has been blocked.** They will no longer see your profile.")
-
-    except Exception as e:
-        await message.reply(f"⚠ **An error occurred:** {str(e)}")
-
-
-# 📌 Command: /unblock <username/user_id>
-@Client.on_message(filters.private & filters.command("unblock"))
-async def unblock_user(client: Client, message: Message):
-    args = message.text.split(" ", 1)
-    if len(args) != 2:
-        await message.reply("Please provide a user ID or username.")
-        return
-
-    user_identifier = args[1]
-
-    try:
-        if user_identifier.isdigit():
-            user_id = int(user_identifier)
-            user = await client.get_users(user_id)
-        else:
-            user = await client.get_users(user_identifier)
-            user_id = user.id if user else None
-
-        if not user_id or not user:
-            await message.reply("Invalid user ID or username.")
-            return
-
-        requester_id = message.from_user.id
-
-        blocked_users = await db.get_blocked_users(requester_id) or []
-        if user_id not in blocked_users:
-            await message.reply("⚠ **This user is not in your block list.**")
-            return
-
-        await db.unblock_user(requester_id, user_id)
-        await message.reply(f"✅ **User `{user_id}` has been unblocked.** They can now see your profile.")
-
-    except Exception as e:
-        await message.reply(f"⚠ **An error occurred:** {str(e)}")
-
-
-# 📌 Command: /user <username/user_id>
-@Client.on_message(filters.private & filters.command("user"))
-async def user_profile(client: Client, message: Message):
-    args = message.text.split(" ", 1)
-    if len(args) != 2:
-        await message.reply("Please provide a user ID or username.")
-        return
-
-    user_identifier = args[1]
-
-    try:
-        if user_identifier.isdigit():
-            user_id = int(user_identifier)
-            user = await client.get_users(user_id)
-        else:
-            user = await client.get_users(user_identifier)
-            user_id = user.id if user else None
-
-        if not user_id or not user:
-            await message.reply("Invalid user ID or username.")
-            return
-
-        requester_id = message.from_user.id
-
-        # Check if the requester has blocked the target user
-        blocked_users = await db.get_blocked_users(requester_id) or []
-        if user_id in blocked_users:
-            await message.reply("🚫 **You have blocked this user.** Unblock them first to view their profile.")
-            return
-
-        # Check if the target user has blocked the requester
-        target_blocked_users = await db.get_blocked_users(user_id) or []
-        if requester_id in target_blocked_users:
-            await message.reply("🚫 **This user has blocked you.** You cannot view their profile.")
-            return
-
-        # Fetch profile from the database
-        profile = await db.get_profile(user_id)
-        if profile:
-            await message.reply_photo(
-                photo=profile.get("photo", "https://envs.sh/On-.jpg"),
-                caption=(
-                    f"📌 **User Profile**\n"
-                    f"👤 **Real Name:** {profile['name']}\n"
-                    f"🆔 **User ID:** `{user_id}`\n"
-                    f"📍 **Location:** {profile['city']}, {profile['country']}\n"
-                    f"🎂 **Age:** {profile['age']}\n"
-                )
-            )
-        else:
-            await message.reply("⚠ **This user has not set up their profile.**")
-
-    except Exception as e:
-        await message.reply(f"⚠ **An error occurred:** {str(e)}")
-
-
-# 📌 Command: /blocklist (View blocked users)
-@Client.on_message(filters.private & filters.command("blocklist"))
-async def view_blocklist(client: Client, message: Message):
-    user_id = message.from_user.id
-
-    try:
-        # Fetch blocked users from the database
-        blocked_users = await db.get_blocked_users(user_id) or []
-
-        if not blocked_users:
-            await message.reply("✅ **You have not blocked anyone.**")
-        else:
-            # Format the blocked users list
-            blocked_list_text = "\n".join([f"🔹 `{uid}`" for uid in blocked_users])
-            await message.reply(f"🚫 **Blocked Users:**\n{blocked_list_text}")
-
-    except Exception as e:
-        await message.reply(f"⚠ **An error occurred while fetching the block list:** {str(e)}")
