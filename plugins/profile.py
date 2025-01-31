@@ -6,17 +6,39 @@ from helper.database import db  # Import database helper
 # Temporary storage for user states during profile setup
 user_states = {}
 
-# 📌 Command: /profile
+@Client.on_message(filters.command("set_profile"))
+async def set_profile_handler(client: Client, message: Message):
+    user_id = message.from_user.id
+    user = message.from_user
+
+    # Extract first name, last name, and dc_id
+    first_name = user.first_name if user.first_name else "N/A"
+    last_name = user.last_name if user.last_name else "N/A"
+    is_premium = "Yes" if getattr(user, "is_premium", False) else "No"
+    dc_id = getattr(user, "dc_id", "Unknown")  # ✅ Extract DC ID
+
+    # Store in user state for profile setup
+    user_states[user_id] = {
+        "step": "photo",
+        "first_name": first_name,
+        "last_name": last_name,
+        "dc_id": dc_id,  # ✅ Store extracted DC ID
+        "is_premium": is_premium
+    }
+
+    await message.reply("📸 Please send your **profile picture**.")
+
 @Client.on_message(filters.command("profile"))
 async def profile_handler(client: Client, message: Message):
     user_id = message.from_user.id
     profile = await db.get_profile(user_id)
 
     if profile:
-        # Ensure values are properly defined
+        # Ensure all values are properly extracted
         first_name = profile.get("first_name", "N/A")
         last_name = profile.get("last_name", "N/A")
         is_premium = "Yes" if profile.get("is_premium", "No") == "Yes" else "No"
+        dc_id = profile.get("dc_id", "Unknown")  # ✅ Ensure it's always displayed
 
         edit_button = InlineKeyboardMarkup(
             [[InlineKeyboardButton("✏ Edit Profile", callback_data="edit_profile")]]
@@ -29,7 +51,7 @@ async def profile_handler(client: Client, message: Message):
                 f"👤 **Real Name:** {profile['name']}\n"
                 f"📛 **Telegram Name:** {first_name} {last_name}\n"
                 f"🆔 **User ID:** `{user_id}`\n"
-                f"🗂 **DC Number:** `{profile['dc_id']}`\n"
+                f"🗂 **DC Number:** `{dc_id}`\n"  # ✅ Always extracted from user
                 f"📍 **Location:** {profile['city']}, {profile['country']}\n"
                 f"🎂 **Age:** {profile['age']}\n"
                 f"💎 **Premium User:** {is_premium}"
@@ -39,27 +61,23 @@ async def profile_handler(client: Client, message: Message):
     else:
         await message.reply("⚠ You haven't set your profile yet. Use /set_profile to create one.")
 
-# 📌 Command: /set_profile
-@Client.on_message(filters.command("set_profile"))
-async def set_profile_handler(client: Client, message: Message):
-    user_id = message.from_user.id
-    user = message.from_user
-
-    # Extract user details and ensure values are defined
-    first_name = user.first_name if user.first_name else "N/A"
-    last_name = user.last_name if user.last_name else "N/A"
-    is_premium = "Yes" if getattr(user, "is_premium", False) else "No"
-
-    # Initialize user profile setup
-    user_states[user_id] = {
-        "step": "photo",
-        "first_name": first_name,
-        "last_name": last_name,
-        "dc_id": user.dc_id if hasattr(user, "dc_id") else "Unknown",
-        "is_premium": is_premium
+async def save_profile(user_id, message):
+    """Save the collected profile data to the database."""
+    profile_data = {
+        "user_id": user_id,
+        "photo": user_states[user_id]["photo"],
+        "name": user_states[user_id].get("name", "Confidential"),
+        "city": user_states[user_id].get("city", "Confidential"),
+        "country": user_states[user_id].get("country", "Confidential"),
+        "age": user_states[user_id].get("age", "Confidential"),
+        "first_name": user_states[user_id].get("first_name", "N/A"),
+        "last_name": user_states[user_id].get("last_name", "N/A"),
+        "dc_id": user_states[user_id].get("dc_id", "Unknown"),  # ✅ Store extracted DC ID
+        "is_premium": user_states[user_id].get("is_premium", "No"),
     }
-
-    await message.reply("📸 Please send your **profile picture**.")
+    await db.save_profile(user_id, profile_data)
+    del user_states[user_id]
+    await message.reply("✅ **Profile saved!** Use /profile to view it.")
 
 # 📌 Command: /cancel (to stop profile setup)
 @Client.on_message(filters.command("cancel"))
