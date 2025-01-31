@@ -56,6 +56,13 @@ class Database:
             upsert=True
         )
 
+    async def delete_profile(self, user_id):
+        """Delete the user's profile from the database."""
+        result = await self.profile_col.delete_one({"user_id": user_id})
+        if result.deleted_count == 1:
+            return True
+        return False
+    
     # 📌 Join request functions
     async def find_join_req(self, user_id, channel_id):
         """Check if a join request exists for the given user ID and channel ID."""
