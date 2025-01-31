@@ -3,13 +3,13 @@ id_pattern = re.compile(r'^.\d+$')
 
 class Config(object):
     # pyro client config
-    API_ID    = os.environ.get("API_ID", "10964975")
-    API_HASH  = os.environ.get("API_HASH", "86588233b82bdec8e1c18929851642cc")
+    API_ID    = os.environ.get("API_ID", "27918517")
+    API_HASH  = os.environ.get("API_HASH", "6c7769e65007772c7de436f70248633b")
     BOT_TOKEN = os.environ.get("BOT_TOKEN", "7759643743:AAFwEzw3TCCseGbirYK_YEDV8Fr1p89Z0pk") 
 
     # database config
-    DB_NAME = os.environ.get("DB_NAME","auth-autorename")     
-    DB_URL  = os.environ.get("DB_URL","mongodb+srv://arsenalbotz05:arsenalbotz05@auth-autorename.md8ze.mongodb.net/?retryWrites=true&w=majority&appName=auth-autorename")
+    DB_NAME = os.environ.get("DB_NAME","temp")     
+    DB_URL  = os.environ.get("DB_URL","mongodb+srv://nojoxeg271:nojoxeg271@temp.jra85.mongodb.net/?retryWrites=true&w=majority&appName=temp")
    
     # other configs
     BOT_UPTIME  = time.time()
@@ -18,13 +18,11 @@ class Config(object):
     FORCE_SUB_CHANNELS = os.environ.get('FORCE_SUB_CHANNELS', 'Elites_Bots,Elites_Assistance').split(',')
     LOG_CHANNEL = int(os.environ.get("LOG_CHANNEL", "-1002491891768"))
     NEW_USER_LOG = int(os.environ.get("NEW_USER_LOG", "-1002367669203"))
-    
-    # wes response configuration     
+         
     WEBHOOK = bool(os.environ.get("WEBHOOK", "True"))
 
 
 class Txt(object):
-    # part of text configuration
         
     START_TXT = """<b>Aʜᴏʏ {} ⚔️ !
 
