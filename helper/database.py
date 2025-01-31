@@ -2,7 +2,6 @@ import logging
 import motor.motor_asyncio
 from config import Config
 from .utils import send_log
-from datetime import datetime, timedelta
 
 class Database:
 
@@ -11,14 +10,13 @@ class Database:
         self.db = self._client[database_name]
         self.user_col = self.db.user        
         self.req_col = self.db.channels        
-        
-    
-    
+        self.profile_col = self.db.profiles
+
     def new_user(self, id):
         return {
             "_id": int(id),
             "file_id": None,
-	}
+        }
 
     async def add_user(self, b, m):
         u = m.from_user
@@ -26,21 +24,17 @@ class Database:
             user = self.new_user(u.id)
             await self.user_col.insert_one(user)            
             await send_log(b, u)
-      
-      
+
     async def is_user_exist(self, id):
         user = await self.user_col.find_one({'_id': int(id)})
         return bool(user)
-        
-    async def total_users_count(self):
-        return await self.user_col.count_documents({})
 
     async def get_all_users(self):
         return self.user_col.find({})
 
     async def delete_user(self, user_id):
         await self.user_col.delete_many({'_id': int(user_id)})
-	
+    
     async def set_user_attr(self, id, field, value):
         await self.user_col.update_one({'_id': int(id)}, {'$set': {field: value}})
 
@@ -48,6 +42,18 @@ class Database:
         user = await self.user_col.find_one({'_id': int(id)})
         return user.get(field, default) if user else default
 
+    # Profile-related functions
+    async def get_profile(self, user_id):
+        """Retrieve user profile from database."""
+        return await self.profile_col.find_one({"user_id": user_id})
+
+    async def save_profile(self, user_id, profile_data):
+        """Save or update user profile in the database."""
+        await self.profile_col.update_one(
+            {"user_id": user_id}, 
+            {"$set": profile_data}, 
+            upsert=True
+        )
 
     # Check if the user has already sent a join request to the specific channel
     async def find_join_req(self, user_id, channel_id):
@@ -64,7 +70,6 @@ class Database:
         """Clear all join requests from the database."""
         await self.req_col.drop()
 
- 
     async def get_db_size(self):
         return (await self.db.command("dbstats"))['dataSize']
         
