@@ -24,11 +24,8 @@ class Config(object):
 
 class Txt(object):
         
-    START_TXT = """<b>Aʜᴏʏ {} ⚔️ !
+    START_TXT = """<b>Aʜᴏʏ {} ⚔️!
 
-Wᴇʟᴄᴏᴍᴇ ᴛᴏ ᴛʜᴇ Uʟᴛɪᴍᴀᴛᴇ Fɪʟᴇ Rᴇɴᴀᴍɪɴɢ Bᴏᴛ! 
+Welcome to this bot! Whether it's the best or the worst bot from @Elites_Bots, let's see if we can make it something truly amazing!
 
-🎭 <u>Pᴜʀᴘᴏꜱᴇ oғ Tʜᴇ Bᴏᴛ:</u>
-Tʜɪꜱ ʙᴏᴛ ɪꜱ ᴅᴇꜱɪɢɴᴇᴅ ᴛᴏ ᴍᴀᴋᴇ ʀᴇɴᴀᴍɪɴɢ ᴀɴɪᴍᴇ ᴀɴᴅ ꜱᴇʀɪᴇꜱ ғɪʟᴇꜱ ᴀ ʙʀᴇᴇᴢᴇ, ᴇʟɪᴍɪɴᴀᴛɪɴɢ ᴀɴʏ ꜱᴛʀᴇꜱꜱ ᴀɴᴅ ᴇɴꜱᴜʀɪɴɢ ᴀɴ ᴇғғᴏʀᴛʟᴇꜱꜱ ᴘʀᴏᴄᴇꜱꜱ. 
-
-──────────────────</b> """
+──────────────────</b>"""
